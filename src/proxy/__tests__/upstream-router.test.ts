@@ -10,6 +10,11 @@ function makeAdapter(tag: string): UpstreamAdapter {
       return Promise.resolve(new Response());
     },
     parseStream: async function*(_response: Response): AsyncGenerator<CodexSSEEvent> {},
+    getRequestLogInfo: () => ({
+      interfaceIdentifier: `${tag}.responses`,
+      interfaceName: `${tag} responses`,
+      interfaceUrl: `https://${tag}.example.test/v1/responses`,
+    }),
   };
 }
 
@@ -85,5 +90,45 @@ describe("UpstreamRouter", () => {
 
   it("returns default adapter for unknown prefix", () => {
     expect(router.resolve("unknown-provider:gpt-4o").tag).toBe("codex");
+  });
+
+  describe("without a registered codex adapter", () => {
+    const providerOnlyAdapters = new Map([
+      ["openai", openaiAdapter],
+      ["anthropic", anthropicAdapter],
+      ["gemini", geminiAdapter],
+      ["deepseek", deepseekAdapter],
+    ]);
+
+    const providerOnlyRouter = new UpstreamRouter(
+      providerOnlyAdapters,
+      { "deepseek-chat": "deepseek", "deepseek-reasoner": "deepseek" },
+      "codex",
+    );
+
+    it("falls back to codex when no rule matches", () => {
+      const adapter = providerOnlyRouter.resolve("unknown-model-xyz");
+
+      expect(adapter.tag).toBe("codex");
+    });
+
+    it("does not fall back to the first provider adapter", () => {
+      const adapter = providerOnlyRouter.resolve("o3");
+
+      expect(adapter.tag).toBe("codex");
+      expect(adapter).not.toBe(openaiAdapter);
+    });
+
+    it("treats unmatched models as codex models", () => {
+      expect(providerOnlyRouter.isCodexModel("o3")).toBe(true);
+      expect(providerOnlyRouter.isCodexModel("unknown-model-xyz")).toBe(true);
+    });
+
+    it("keeps prefix, model_routing, and pattern matches unchanged", () => {
+      expect(providerOnlyRouter.resolve("openai:gpt-4o")).toBe(openaiAdapter);
+      expect(providerOnlyRouter.resolve("deepseek-chat")).toBe(deepseekAdapter);
+      expect(providerOnlyRouter.resolve("claude-3-5-sonnet-20241022")).toBe(anthropicAdapter);
+      expect(providerOnlyRouter.resolve("gemini-2.0-flash")).toBe(geminiAdapter);
+    });
   });
 });

@@ -144,7 +144,7 @@ function createTestFormat(): FormatAdapter {
 function makeProxyRequest(model: string): ProxyRequest {
   return {
     codexRequest: { model } as ProxyRequest["codexRequest"],
-    model,
+    responseModel: model,
     isStreaming: false,
   };
 }

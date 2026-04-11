@@ -33,7 +33,8 @@ import type { ApiCallLogStore } from "../../services/api-call-logs.js";
 /** Data prepared by each route after parsing and translating the request. */
 export interface ProxyRequest {
   codexRequest: CodexResponsesRequest;
-  model: string;
+  /** Model name echoed back to clients after response translation. */
+  responseModel: string;
   isStreaming: boolean;
   /** Original schema before tuple→object conversion (for response reconversion). */
   tupleSchema?: Record<string, unknown> | null;
@@ -68,6 +69,16 @@ export interface FormatAdapter {
 
 const MAX_EMPTY_RETRIES = 2;
 
+function getCodexUpstreamModel(req: ProxyRequest): string {
+  return typeof req.codexRequest.model === "string" ? req.codexRequest.model : "";
+}
+
+function getDirectUpstreamModel(req: ProxyRequest): string {
+  const model = getCodexUpstreamModel(req);
+  const colon = model.indexOf(":");
+  return colon > 0 ? model.slice(colon + 1) : model;
+}
+
 /** Sleep if this account had a recent request, to stagger upstream traffic. */
 export async function staggerIfNeeded(prevSlotMs: number | null): Promise<void> {
   const intervalMs = getConfig().auth.request_interval_ms;
@@ -98,7 +109,7 @@ export async function handleProxyRequest(
   proxyPool?: ProxyPool,
   apiCallLogs?: ApiCallLogStore,
 ): Promise<Response> {
-  const loggedModel = req.model || req.codexRequest.model || "";
+  const upstreamModel = getCodexUpstreamModel(req);
   // Session affinity: prefer the account that created the previous response
   const affinityMap = getSessionAffinityMap();
   const prevRespId = req.codexRequest.previous_response_id;
@@ -134,7 +145,7 @@ export async function handleProxyRequest(
   let callLogId = apiCallLogs?.startCall({
     ...codexApi.getRequestLogInfo(req.codexRequest),
     provider_tag: codexApi.tag,
-    model: loggedModel,
+    model: upstreamModel,
   });
   // Idempotent-release guard: prevents double-release across retry branches
   const released = new Set<string>();
@@ -148,7 +159,7 @@ export async function handleProxyRequest(
       ? `effort=${req.codexRequest.reasoning.effort ?? "none"} summary=${req.codexRequest.reasoning.summary ?? "none"}`
       : "off";
     console.log(
-      `[${fmt.tag}] Account ${entryId} | model=${req.model} | input_items=${inputItems} instr=${instrLen}B payload=${reqJson.length}B reasoning=[${reasoningField}]` +
+      `[${fmt.tag}] Account ${entryId} | model=${req.responseModel} | input_items=${inputItems} instr=${instrLen}B payload=${reqJson.length}B reasoning=[${reasoningField}]` +
       (prevRespId ? ` | affinity=${affinityHit ? "hit" : "miss"}` : ""),
     );
     if (reqJson.length > 50_000) {
@@ -217,7 +228,7 @@ export async function handleProxyRequest(
           s.onAbort(() => abortController.abort());
           try {
             await streamResponse(
-              s, capturedApi, rawResponse, req.model, fmt,
+              s, capturedApi, rawResponse, req.responseModel, fmt,
               (u) => { usageInfo = u; },
               req.tupleSchema,
               (id) => { capturedResponseId = id; },
@@ -345,7 +356,7 @@ export async function handleProxyRequest(
       callLogId = apiCallLogs?.startCall({
         ...codexApi.getRequestLogInfo(req.codexRequest),
         provider_tag: codexApi.tag,
-        model: loggedModel,
+        model: upstreamModel,
       });
       console.log(`[${fmt.tag}] Fallback → account ${retry.entryId}`);
       await staggerIfNeeded(retry.prevSlotMs);
@@ -379,7 +390,7 @@ async function handleNonStreaming(
   for (let attempt = 1; ; attempt++) {
     try {
       const result = await fmt.collectTranslator(
-        currentApi, currentRawResponse, req.model, req.tupleSchema,
+        currentApi, currentRawResponse, req.responseModel, req.tupleSchema,
       );
       if (result.responseId && affinityMap && conversationId) {
         affinityMap.record(result.responseId, currentEntryId, conversationId, turnState);
@@ -436,7 +447,7 @@ async function handleNonStreaming(
         callLogId = apiCallLogs?.startCall({
           ...currentApi.getRequestLogInfo(req.codexRequest),
           provider_tag: currentApi.tag,
-          model: req.model || req.codexRequest.model || "",
+          model: getCodexUpstreamModel(req),
         });
         try {
           currentRawResponse = await withRetry(
@@ -509,13 +520,13 @@ export async function handleDirectRequest(
   fmt: FormatAdapter,
   apiCallLogs?: ApiCallLogStore,
 ): Promise<Response> {
-  const loggedModel = req.model || req.codexRequest.model || "";
+  const upstreamModel = getDirectUpstreamModel(req);
   const abortController = new AbortController();
   c.req.raw.signal.addEventListener("abort", () => abortController.abort(), { once: true });
   const callLogId = apiCallLogs?.startCall({
     ...upstream.getRequestLogInfo(req.codexRequest),
     provider_tag: upstream.tag,
-    model: loggedModel,
+    model: upstreamModel,
   });
 
   let rawResponse: Response;
@@ -548,7 +559,7 @@ export async function handleDirectRequest(
     return stream(c, async (s) => {
       s.onAbort(() => abortController.abort());
       let usage: UsageInfo | undefined;
-      await streamResponse(s, upstream, rawResponse, req.model, fmt, (u) => { usage = u; }, req.tupleSchema, () => {});
+      await streamResponse(s, upstream, rawResponse, req.responseModel, fmt, (u) => { usage = u; }, req.tupleSchema, () => {});
       if (callLogId) {
         apiCallLogs?.completeCall(callLogId, usage
           ? {
@@ -570,7 +581,7 @@ export async function handleDirectRequest(
 
   // Non-streaming
   try {
-    const result = await fmt.collectTranslator(upstream, rawResponse, req.model, req.tupleSchema);
+    const result = await fmt.collectTranslator(upstream, rawResponse, req.responseModel, req.tupleSchema);
     if (callLogId) {
       apiCallLogs?.completeCall(callLogId, {
         status: "success",

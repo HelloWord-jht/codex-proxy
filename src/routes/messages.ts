@@ -105,7 +105,7 @@ export function createMessagesRoutes(
     const wantThinking = req.thinking?.type === "enabled" || req.thinking?.type === "adaptive";
     const proxyReq = {
       codexRequest,
-      model: buildDisplayModelName(parseModelName(req.model)),
+      responseModel: buildDisplayModelName(parseModelName(req.model)),
       isStreaming: req.stream,
     };
     const fmt = makeAnthropicFormat(wantThinking);

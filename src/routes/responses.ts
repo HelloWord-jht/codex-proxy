@@ -598,7 +598,7 @@ export function createResponsesRoutes(
     const clientWantsStream = body.stream !== false;
     const proxyReq = {
       codexRequest,
-      model: displayModel,
+      responseModel: displayModel,
       isStreaming: clientWantsStream,
       tupleSchema,
     };

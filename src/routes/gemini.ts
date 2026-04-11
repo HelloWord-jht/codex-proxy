@@ -160,7 +160,7 @@ export function createGeminiRoutes(
 
     const proxyReq = {
       codexRequest,
-      model: geminiModel,
+      responseModel: geminiModel,
       isStreaming,
       tupleSchema,
     };

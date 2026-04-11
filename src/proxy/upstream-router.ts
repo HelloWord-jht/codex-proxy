@@ -1,13 +1,12 @@
 /**
- * UpstreamRouter — routes a model name to the appropriate UpstreamAdapter.
+ * UpstreamRouter routes a model name to the appropriate UpstreamAdapter.
  *
  * Priority (highest to lowest):
  *   0. ApiKeyPool entry matching the exact model name
  *   1. Explicit provider prefix: "openai:gpt-4o", "anthropic:claude-3-5-sonnet"
  *   2. model_routing config table: { "deepseek-chat": "deepseek" }
- *   3. Custom provider `models` list
- *   4. Built-in name pattern rules: "claude-*" → anthropic, "gemini-*" → gemini
- *   5. Default (codex)
+ *   3. Built-in name pattern rules: "claude-*" -> anthropic, "gemini-*" -> gemini
+ *   4. Default (codex)
  */
 
 import type { UpstreamAdapter } from "./upstream-adapter.js";
@@ -19,14 +18,17 @@ export type AdapterFactory = (entry: ApiKeyEntry) => UpstreamAdapter;
 export class UpstreamRouter {
   private apiKeyPool: ApiKeyPool | null = null;
   private adapterFactory: AdapterFactory | null = null;
-  /** Cache: apiKeyEntry.id → adapter instance. Invalidated when key changes. */
+  /** Cache: apiKeyEntry.id -> adapter instance. Invalidated when key changes. */
   private dynamicAdapters = new Map<string, { apiKey: string; adapter: UpstreamAdapter }>();
+  private readonly defaultFallbackAdapter: UpstreamAdapter;
 
   constructor(
     private readonly adapters: Map<string, UpstreamAdapter>,
     private readonly modelRouting: Record<string, string>,
     private readonly defaultTag: string,
-  ) {}
+  ) {
+    this.defaultFallbackAdapter = createDefaultFallbackAdapter(this.defaultTag);
+  }
 
   /** Attach the runtime API key pool for dynamic model resolution. */
   setApiKeyPool(pool: ApiKeyPool, factory: AdapterFactory): void {
@@ -35,13 +37,11 @@ export class UpstreamRouter {
   }
 
   resolve(model: string): UpstreamAdapter {
-    const defaultAdapter = this.adapters.get(this.defaultTag) ?? this.adapters.values().next().value!;
-
     // Strip provider prefix for pool lookup
     const colonIdx = model.indexOf(":");
     const bareModel = colonIdx > 0 ? model.slice(colonIdx + 1) : model;
 
-    // 0. ApiKeyPool — exact model match (highest priority)
+    // 0. ApiKeyPool -> exact model match (highest priority)
     if (this.apiKeyPool && this.adapterFactory) {
       const entries = this.apiKeyPool.getByModel(bareModel);
       if (entries.length > 0) {
@@ -74,8 +74,8 @@ export class UpstreamRouter {
       return this.adapters.get("gemini")!;
     }
 
-    // 4. Default adapter
-    return defaultAdapter;
+    // 4. Default codex route
+    return this.adapters.get(this.defaultTag) ?? this.defaultFallbackAdapter;
   }
 
   isCodexModel(model: string): boolean {
@@ -95,8 +95,29 @@ function pickLeastRecentlyUsed(entries: ApiKeyEntry[]): ApiKeyEntry {
   let best = entries[0];
   for (let i = 1; i < entries.length; i++) {
     const e = entries[i];
-    if (!e.lastUsedAt) return e; // never used → pick immediately
+    if (!e.lastUsedAt) return e; // never used -> pick immediately
     if (!best.lastUsedAt || e.lastUsedAt < best.lastUsedAt) best = e;
   }
   return best;
+}
+
+function createDefaultFallbackAdapter(tag: string): UpstreamAdapter {
+  return {
+    tag,
+    async createResponse() {
+      throwDefaultFallbackError(tag);
+    },
+    async *parseStream() {
+      throwDefaultFallbackError(tag);
+    },
+    getRequestLogInfo() {
+      return throwDefaultFallbackError(tag);
+    },
+  };
+}
+
+function throwDefaultFallbackError(tag: string): never {
+  throw new Error(
+    `[UpstreamRouter] Default route "${tag}" is router-only and must be handled by the account pool instead of direct upstream dispatch.`,
+  );
 }

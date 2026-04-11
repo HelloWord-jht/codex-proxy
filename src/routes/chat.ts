@@ -132,7 +132,7 @@ export function createChatRoutes(
     const wantReasoning = !!req.reasoning_effort;
     const proxyReq = {
       codexRequest,
-      model: displayModel,
+      responseModel: displayModel,
       isStreaming: req.stream,
       tupleSchema,
     };

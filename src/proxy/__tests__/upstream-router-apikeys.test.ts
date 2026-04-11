@@ -22,6 +22,11 @@ function mockAdapter(tag: string): UpstreamAdapter {
     tag,
     createResponse: () => Promise.resolve(new Response()),
     async *parseStream(): AsyncGenerator<CodexSSEEvent> { /* empty */ },
+    getRequestLogInfo: () => ({
+      interfaceIdentifier: `${tag}.responses`,
+      interfaceName: `${tag} responses`,
+      interfaceUrl: `https://${tag}.example.test/v1/responses`,
+    }),
   };
 }
 
@@ -144,5 +149,19 @@ describe("UpstreamRouter with ApiKeyPool", () => {
     // "openai:gpt-5.4" should strip prefix and find pool entry for "gpt-5.4"
     const adapter = router.resolve("openai:gpt-5.4");
     expect(adapter.tag).toBe("dynamic-openai-gpt-5.4");
+  });
+
+  it("still prioritizes api-key matches when codex adapter is not registered", () => {
+    pool.add({ provider: "openai", model: "gpt-5.4", apiKey: "k1" });
+
+    const adapters = new Map<string, UpstreamAdapter>();
+    adapters.set("openai", mockAdapter("openai"));
+
+    const router = new UpstreamRouter(adapters, {}, "codex");
+    router.setApiKeyPool(pool, mockFactory);
+
+    const adapter = router.resolve("gpt-5.4");
+    expect(adapter.tag).toBe("dynamic-openai-gpt-5.4");
+    expect(router.isCodexModel("gpt-5.4")).toBe(false);
   });
 });

@@ -227,14 +227,6 @@ Native Codex Responses API passthrough (WebSocket transport).
 | GET | `/debug/diagnostics` | System diagnostics (localhost only) |
 | GET | `/debug/models` | Model store internals |
 
-### Updates
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/admin/update-status` | Check update availability |
-| POST | `/admin/check-update` | Trigger update check |
-| POST | `/admin/apply-update` | Apply self-update (SSE progress stream) |
-
 ### Usage Statistics
 
 | Method | Path | Description |

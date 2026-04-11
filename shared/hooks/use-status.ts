@@ -15,6 +15,13 @@ export interface ModelFamily {
   defaultEffort: string;
 }
 
+interface AuthStatusResponse {
+  authenticated: boolean;
+  proxy_api_key: string | null;
+  proxy_version: string | null;
+  proxy_commit: string | null;
+}
+
 /**
  * Extract model family ID from a model ID.
  * gpt-5.3-codex-high → gpt-5.3-codex
@@ -45,6 +52,8 @@ function isTierVariant(id: string): boolean {
 export function useStatus(accountCount: number) {
   const [baseUrl, setBaseUrl] = useState("Loading...");
   const [apiKey, setApiKey] = useState("Loading...");
+  const [proxyVersion, setProxyVersion] = useState<string | null>(null);
+  const [proxyCommit, setProxyCommit] = useState<string | null>(null);
   const [models, setModels] = useState<string[]>([]);
   const [selectedModel, setSelectedModel] = useState("");
   const [modelCatalog, setModelCatalog] = useState<CatalogModel[]>([]);
@@ -86,7 +95,9 @@ export function useStatus(accountCount: number) {
     async function loadStatus() {
       try {
         const resp = await fetch("/auth/status");
-        const data = await resp.json();
+        const data = await resp.json() as AuthStatusResponse;
+        setProxyVersion(data.proxy_version ?? null);
+        setProxyCommit(data.proxy_commit ?? null);
         if (!data.authenticated) return;
         setBaseUrl(`${window.location.origin}/v1`);
         setApiKey(data.proxy_api_key || "any-string");
@@ -133,6 +144,8 @@ export function useStatus(accountCount: number) {
     setSelectedEffort,
     selectedSpeed,
     setSelectedSpeed,
+    proxyVersion,
+    proxyCommit,
     modelFamilies,
     modelCatalog,
   };

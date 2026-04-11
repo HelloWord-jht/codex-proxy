@@ -4,6 +4,7 @@ import type { TranslationKey } from "../../../shared/i18n/translations";
 
 interface AddAccountProps {
   visible: boolean;
+  authUrl: string;
   onCancel: () => void;
   onSubmitRelay: (callbackUrl: string) => Promise<void>;
   onAddByRefreshToken: (refreshToken: string) => Promise<string | null>;
@@ -11,12 +12,21 @@ interface AddAccountProps {
   addError: string;
 }
 
-export function AddAccount({ visible, onCancel, onSubmitRelay, onAddByRefreshToken, addInfo, addError }: AddAccountProps) {
+export function AddAccount({
+  visible,
+  authUrl,
+  onCancel,
+  onSubmitRelay,
+  onAddByRefreshToken,
+  addInfo,
+  addError,
+}: AddAccountProps) {
   const t = useT();
   const [input, setInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [rtInput, setRtInput] = useState("");
   const [rtSubmitting, setRtSubmitting] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleSubmit = useCallback(async () => {
     setSubmitting(true);
@@ -65,6 +75,31 @@ export function AddAccount({ visible, onCancel, onSubmitRelay, onAddByRefreshTok
               <li dangerouslySetInnerHTML={{ __html: t("addStep2") }} />
               <li dangerouslySetInnerHTML={{ __html: t("addStep3") }} />
             </ol>
+            {authUrl && (
+              <div class="mb-4 space-y-2">
+                <p class="text-xs text-slate-500 dark:text-text-dim">
+                  Open this authorization URL in your browser, complete login, then paste the callback URL below.
+                </p>
+                <div class="flex gap-3">
+                  <input
+                    type="text"
+                    readOnly
+                    value={authUrl}
+                    class="flex-1 px-3 py-2.5 bg-slate-50 dark:bg-bg-dark border border-gray-200 dark:border-border-dark rounded-lg text-xs font-mono text-slate-600 dark:text-text-main"
+                  />
+                  <button
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(authUrl);
+                      setCopied(true);
+                      window.setTimeout(() => setCopied(false), 1500);
+                    }}
+                    class="px-4 py-2.5 bg-white dark:bg-card-dark border border-gray-200 dark:border-border-dark rounded-lg text-sm font-medium text-slate-700 dark:text-text-main hover:bg-slate-50 dark:hover:bg-border-dark transition-colors"
+                  >
+                    {copied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+              </div>
+            )}
             <div class="flex gap-3">
               <input
                 type="text"

@@ -276,6 +276,204 @@
 - 不得仅修复单一路由，必须覆盖所有会写入 API 调用记录的调用路径
 - 保持现有公开接口尽可能稳定
 
+## 任务类型: Security Hardening / Feature Removal
+
+目标位置:
+- 类: 服务启动逻辑
+- 方法:
+  - `startServer(options?: StartOptions): Promise<ServerHandle>`
+- 文件: [index.ts](D:/Dev/IDEA/Project/codex-proxy/src/index.ts)
+
+- 类: 更新路由
+- 方法:
+  - `createUpdateRoutes(): Hono`
+  - `GET /admin/update-status`
+  - `POST /admin/check-update`
+  - `POST /admin/apply-update`
+- 文件: [update.ts](D:/Dev/IDEA/Project/codex-proxy/src/routes/admin/update.ts)
+
+- 类: 代理自更新逻辑
+- 方法:
+  - `checkProxySelfUpdate()`
+  - `applyProxySelfUpdate(...)`
+  - `startProxyUpdateChecker()`
+  - `stopProxyUpdateChecker()`
+- 文件: [self-update.ts](D:/Dev/IDEA/Project/codex-proxy/src/self-update.ts)
+
+- 类: Codex 版本更新检查逻辑
+- 方法:
+  - `checkForUpdate()`
+  - `startUpdateChecker()`
+  - `stopUpdateChecker()`
+- 文件: [update-checker.ts](D:/Dev/IDEA/Project/codex-proxy/src/update-checker.ts)
+
+- 类: Electron 自动更新逻辑
+- 方法:
+  - `initAutoUpdater(...)`
+  - `checkForUpdateManual()`
+  - `downloadUpdate()`
+  - `installUpdate()`
+  - `stopAutoUpdater()`
+- 文件: [auto-updater.ts](D:/Dev/IDEA/Project/codex-proxy/packages/electron/electron/auto-updater.ts)
+
+- 类: Electron 主进程
+- 方法:
+  - 应用启动阶段对自动更新的初始化
+  - `buildTrayMenu()`
+  - `createWindow()`
+- 文件: [main.ts](D:/Dev/IDEA/Project/codex-proxy/packages/electron/electron/main.ts)
+
+- 类: Web 顶部导航
+- 方法: `Header(...)`
+- 文件: [Header.tsx](D:/Dev/IDEA/Project/codex-proxy/web/src/components/Header.tsx)
+
+- 类: Web 更新弹窗
+- 方法: `UpdateModal(...)`
+- 文件: [UpdateModal.tsx](D:/Dev/IDEA/Project/codex-proxy/web/src/components/UpdateModal.tsx)
+
+- 类: Web 页脚
+- 方法: `Footer(...)`
+- 文件: [Footer.tsx](D:/Dev/IDEA/Project/codex-proxy/web/src/components/Footer.tsx)
+
+当前行为:
+- 项目包含与核心 API 中转功能无关的第三方外链和远程更新能力
+- Web 界面存在跳转到 GitHub / Release 页等外部链接
+- Electron 存在打开外部链接、检查更新、下载更新、安装更新等逻辑
+- 后端存在主动联网的更新检查逻辑，可能访问 GitHub、GHCR、远程 appcast 等外部地址
+- 应用启动后会启动更新轮询任务
+- 系统托盘菜单存在检查更新、下载更新、安装更新等功能
+- 这些能力与 API 中转核心功能无关，存在对外联网和信息暴露面
+
+期望行为:
+- 删除所有与项目核心 API 中转功能无关的第三方外链、远程更新、自动更新、版本探测、发布页跳转能力
+- 应用运行期间不得因非核心功能主动访问任何第三方更新源、发布源、代码托管源或外部页面
+- Electron 不得自动打开任何外部链接
+- Web 界面不得包含 GitHub、Release、捐赠、社群、外部推广类入口
+- 保留账号池、Provider API Key、代理池、模型路由、Dashboard、调用日志等核心代理能力
+- 项目在通过接口提供服务时，不得因非核心功能额外向外发送无关请求
+
+修改要求:
+- 删除后端更新接口及其依赖调用链
+- 删除启动阶段所有自动更新检查任务
+- 删除 `self-update.ts` 与 `update-checker.ts` 的功能接入；如文件仍保留，仅允许保留不会触发联网与不会暴露外部信息的最小兼容实现
+- 删除 Electron 自动更新能力与托盘更新菜单项
+- 删除 Electron 中所有对外部链接的打开行为
+- 将 Electron `setWindowOpenHandler` 调整为拒绝非本地页面打开，禁止调用 `shell.openExternal(...)`
+- 删除 Web 中所有外链按钮、更新按钮、更新状态入口、更新弹窗入口
+- 删除与更新状态展示相关的前端依赖，避免残留请求 `/admin/update-status`
+- 如页脚版本展示依赖更新状态接口，移除该依赖或改为仅展示本地静态版本信息
+- 全局清理与以下类别相关的内容:
+  - GitHub / Releases / Issues / X / 社群 / 打赏 / 捐赠
+  - 自动更新 / 检查更新 / 下载更新 / 安装更新
+  - 外部发布页跳转 / 浏览器打开外链
+  - 与核心代理功能无关的远程版本探测
+- 同步删除或更新相关测试，确保测试结果与新行为一致
+- 不得影响核心 API 转发、账号池、API Key 池、代理池、模型转换、Dashboard 登录等主功能
+
+输出要求:
+- 修改生产代码
+- 修改或删除失效测试
+- 补充测试覆盖以下场景:
+  - 启动服务后不会自动启动非核心远程更新检查
+  - `/admin/update-status`、`/admin/check-update`、`/admin/apply-update` 不再可用，或被明确移除且前端不再依赖
+  - Electron 不再触发外链打开行为
+  - Web 界面不再包含 GitHub / 更新 / Release 等入口
+  - 核心 API 路由与认证流程保持可用
+- 提供最终变更摘要
+- 提供验证结果
+
+约束:
+- 不得保留任何与核心 API 中转功能无关的主动联网逻辑
+- 不得保留任何自动更新、远程版本检查、发布页跳转、外部推广入口
+- 不得仅隐藏 UI，必须同时移除后端或主进程中的实际执行逻辑
+- 不得破坏现有核心代理能力
+- 不得引入新的第三方外联依赖
+- 变更范围必须覆盖后端、Web、Electron 三端中所有相关入口
+- 保持现有核心公开接口尽可能稳定，非核心更新接口允许直接删除
+
+
+
+## 任务类型: Security Hardening / Content Removal
+
+目标位置:
+- 类: Web 顶部导航
+- 方法: `Header(...)`
+- 文件: [Header.tsx](D:/Dev/IDEA/Project/codex-proxy/web/src/components/Header.tsx)
+
+- 类: Web 页脚
+- 方法: `Footer(...)`
+- 文件: [Footer.tsx](D:/Dev/IDEA/Project/codex-proxy/web/src/components/Footer.tsx)
+
+- 类: Web 更新弹窗
+- 方法: `UpdateModal(...)`
+- 文件: [UpdateModal.tsx](D:/Dev/IDEA/Project/codex-proxy/web/src/components/UpdateModal.tsx)
+
+- 类: Electron 主进程
+- 方法:
+  - `createWindow()`
+  - `buildTrayMenu()`
+  - 任何外链打开相关逻辑
+- 文件: [main.ts](D:/Dev/IDEA/Project/codex-proxy/packages/electron/electron/main.ts)
+
+- 类: Electron 自动更新逻辑
+- 方法: 与 GitHub Release、作者仓库、发布页相关的全部方法
+- 文件: [auto-updater.ts](D:/Dev/IDEA/Project/codex-proxy/packages/electron/electron/auto-updater.ts)
+
+- 类: 后端更新与发布信息逻辑
+- 方法:
+  - `checkProxySelfUpdate()`
+  - `checkGitHubRelease()`
+  - 相关发布信息拼装逻辑
+- 文件: [self-update.ts](D:/Dev/IDEA/Project/codex-proxy/src/self-update.ts)
+
+- 目标范围:
+  - `src/`
+  - `web/`
+  - `packages/electron/`
+  - `config/`
+  - 项目文档与静态资源中所有与作者身份、社交账号、仓库主页、Issues、Releases、捐赠、交流群、推广入口相关的内容
+
+当前行为:
+- 项目中存在与作者相关的信息与入口
+- 可能包括作者仓库链接、作者主页、社交账号、GitHub 仓库、Issues、Releases、捐赠二维码、交流群、署名性展示、推广性文案
+- 这些内容分布在 Web、Electron、后端更新逻辑、文档和静态资源中
+- 部分内容可能通过 UI 展示，部分内容可能通过远程发布页、更新页、作者仓库地址间接暴露
+
+期望行为:
+- 删除项目中所有与作者信息相关的内容
+- 删除作者身份、作者主页、社交账号、仓库地址、Issues、Releases、捐赠、交流群、推广入口、署名展示
+- 删除所有与作者信息相关的跳转、文案、静态资源、配置、发布链接、更新链接
+- 删除后，项目不得在界面、代码、配置、文档、静态资源中暴露作者相关信息
+
+修改要求:
+- 全局清理以下类别内容:
+  - 作者姓名、用户名、昵称、GitHub 仓库地址
+  - GitHub Issues / Releases / Profile / Sponsor / Follow / Star
+  - X / Twitter / 微信 / 交流群 / 打赏 / 捐赠
+  - README、文档、UI 文案、按钮、图标、图片、二维码、推广语
+- 删除与作者仓库、发布页、主页绑定的 URL 常量、配置值、拼装逻辑
+- 删除与作者信息相关的静态资源文件引用；若资源仅用于作者展示，直接移除
+- 删除 UI 中所有作者信息展示入口，不得仅隐藏
+- 删除文档中所有作者宣传、关注、捐赠、社群相关段落
+- 如某些代码路径仅用于作者信息展示或跳转，应连同逻辑一起删除
+- 保持核心 API 中转功能不变
+
+输出要求:
+- 修改生产代码
+- 修改或删除相关静态资源引用
+- 修改文档内容，移除作者相关信息
+- 修改或删除相关测试
+- 提供最终变更摘要
+- 提供验证结果
+
+约束:
+- 不得保留任何作者身份、社交账号、仓库主页、捐赠、社群、推广类信息
+- 不得仅替换文案而保留原跳转逻辑
+- 不得影响核心代理、账号池、API Key、代理池、模型路由、Dashboard 等主功能
+- 变更范围必须覆盖代码、UI、配置、文档、静态资源
+- 保持现有核心公开接口尽可能稳定
+
+
 ## TODO
 1. 优化API KEYS 和 Codex 之间的路由策略 ✔
 

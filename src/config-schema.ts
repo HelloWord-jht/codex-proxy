@@ -58,10 +58,6 @@ export const ConfigSchema = z.object({
     }).default({}),
     skip_exhausted: z.boolean().default(true),
   }).default({}),
-  update: z.object({
-    auto_update: z.boolean().default(true),
-    auto_download: z.boolean().default(false),
-  }).default({}),
   /** Third-party API provider keys for multi-backend routing. */
   providers: z.object({
     openai: z.object({

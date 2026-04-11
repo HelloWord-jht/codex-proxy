@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef, useContext } from "preact/hooks";
+import { useState, useEffect, useContext } from "preact/hooks";
 import { createContext } from "preact";
 import type { ComponentChildren } from "preact";
 import { I18nProvider } from "../../shared/i18n/context";
 import { ThemeProvider } from "../../shared/theme/context";
 import { Header } from "./components/Header";
-import { UpdateModal } from "./components/UpdateModal";
 import { AddAccount } from "./components/AddAccount";
 import { AccountList } from "./components/AccountList";
 import { SettingsTab } from "./components/SettingsTab";
@@ -17,41 +16,12 @@ import { UsageStats } from "./pages/UsageStats";
 import { useAccounts } from "../../shared/hooks/use-accounts";
 import { useProxies } from "../../shared/hooks/use-proxies";
 import { useStatus } from "../../shared/hooks/use-status";
-import { useUpdateStatus } from "../../shared/hooks/use-update-status";
 import { useI18n, useT } from "../../shared/i18n/context";
 import { useDashboardAuth } from "../../shared/hooks/use-dashboard-auth";
 import type { TranslationKey } from "../../shared/i18n/translations";
 
 const DashboardAuthCtx = createContext<{ onLogout?: () => void }>({});
 function useDashboardAuthCtx() { return useContext(DashboardAuthCtx); }
-
-function useUpdateMessage() {
-  const { t } = useI18n();
-  const update = useUpdateStatus();
-
-  let msg: string | null = null;
-  let color = "text-primary";
-
-  if (!update.checking && update.result) {
-    const parts: string[] = [];
-    const r = update.result;
-    if (r.proxy?.error) { parts.push(`Proxy: ${r.proxy.error}`); color = "text-red-500"; }
-    else if (r.proxy?.update_available) { parts.push(t("updateAvailable")); color = "text-amber-500"; }
-    if (r.codex?.error) { parts.push(`Codex: ${r.codex.error}`); color = "text-red-500"; }
-    else if (r.codex_update_in_progress) { parts.push(t("fingerprintUpdating")); }
-    else if (r.codex?.version_changed) { parts.push(`Codex: v${r.codex.current_version}`); color = "text-blue-500"; }
-    msg = parts.length > 0 ? parts.join(" · ") : t("upToDate");
-  } else if (!update.checking && update.error) { msg = update.error; color = "text-red-500"; }
-
-  const hasUpdate = update.status?.proxy.update_available ?? false;
-  const proxyUpdateInfo = hasUpdate
-    ? { mode: update.status!.proxy.mode, commits: update.status!.proxy.commits, changelog: update.status!.proxy.changelog ?? null, release: update.status!.proxy.release }
-    : null;
-
-  return { ...update, msg, color, hasUpdate, proxyUpdateInfo };
-}
-
-// ── Tab definitions ─────────────────────────────────────────────────
 
 const TABS: Array<{ hash: string; label: TranslationKey }> = [
   { hash: "", label: "overview" },
@@ -86,31 +56,18 @@ function TabBar({ activeHash }: { activeHash: string }) {
   );
 }
 
-// ── Dashboard ───────────────────────────────────────────────────────
-
 function Dashboard() {
   const accounts = useAccounts();
   const proxies = useProxies();
   const status = useStatus(accounts.list.length);
-  const update = useUpdateMessage();
   const { onLogout } = useDashboardAuthCtx();
-  const [showModal, setShowModal] = useState(false);
-  const prevUpdateAvailable = useRef(false);
   const hash = useHash();
-
-  useEffect(() => {
-    if (update.hasUpdate && !prevUpdateAvailable.current && update.proxyUpdateInfo?.mode !== "electron") {
-      setShowModal(true);
-    }
-    prevUpdateAvailable.current = update.hasUpdate;
-  }, [update.hasUpdate, update.proxyUpdateInfo?.mode]);
 
   const handleProxyChange = async (accountId: string, proxyId: string) => {
     accounts.patchLocal(accountId, { proxyId });
     await proxies.assignProxy(accountId, proxyId);
   };
 
-  // Redirect legacy routes
   if (hash === "#/account-management") { location.hash = "#/accounts"; return null; }
   if (hash === "#/proxy-settings") { location.hash = "#/proxies"; return null; }
 
@@ -120,14 +77,6 @@ function Dashboard() {
     <div class="min-h-screen flex flex-col bg-slate-50 dark:bg-bg-dark">
       <Header
         onAddAccount={accounts.startAdd}
-        onCheckUpdate={update.checkForUpdate}
-        onOpenUpdateModal={() => setShowModal(true)}
-        checking={update.checking}
-        updateStatusMsg={update.msg}
-        updateStatusColor={update.color}
-        version={update.status?.proxy.version ?? null}
-        commit={update.status?.proxy.commit ?? null}
-        hasUpdate={update.hasUpdate}
         onLogout={onLogout}
       />
 
@@ -135,6 +84,7 @@ function Dashboard() {
         <div class="flex flex-col w-full max-w-[960px]">
           <AddAccount
             visible={accounts.addVisible}
+            authUrl={accounts.addAuthUrl}
             onCancel={accounts.cancelAdd}
             onSubmitRelay={accounts.submitRelay}
             onAddByRefreshToken={accounts.addByRefreshToken}
@@ -201,27 +151,13 @@ function Dashboard() {
         </div>
       </main>
 
-      <Footer updateStatus={update.status} />
-      {update.proxyUpdateInfo && (
-        <UpdateModal
-          open={showModal}
-          onClose={() => setShowModal(false)}
-          mode={update.proxyUpdateInfo.mode}
-          commits={update.proxyUpdateInfo.commits}
-          changelog={update.proxyUpdateInfo.changelog}
-          release={update.proxyUpdateInfo.release}
-          onApply={update.applyUpdate}
-          applying={update.applying}
-          restarting={update.restarting}
-          restartFailed={update.restartFailed}
-          updateSteps={update.updateSteps}
-        />
-      )}
+      <Footer
+        proxyVersion={status.proxyVersion}
+        proxyCommit={status.proxyCommit}
+      />
     </div>
   );
 }
-
-// ── Utilities ────────────────────────────────────────────────────────
 
 function useHash(): string {
   const [hash, setHash] = useState(location.hash);

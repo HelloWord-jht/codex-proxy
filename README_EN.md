@@ -28,9 +28,6 @@
 
   <br>
 
-  <a href="https://x.com/IceBearMiner"><img src="https://img.shields.io/badge/Follow-@IceBearMiner-000?style=flat-square&logo=x&logoColor=white" alt="X"></a>
-  <a href="https://github.com/icebear0828/codex-proxy/issues"><img src="https://img.shields.io/github/issues/icebear0828/codex-proxy?style=flat-square" alt="Issues"></a>
-  <a href="#-donate"><img src="https://img.shields.io/badge/Donate-WeChat-07C160?style=flat-square&logo=wechat&logoColor=white" alt="Donate"></a>
 
 </div>
 
@@ -52,7 +49,7 @@ Just a ChatGPT account (or a third-party API relay) and this proxy — your own 
 
 ### Desktop App (Easiest)
 
-Download the installer from [GitHub Releases](https://github.com/icebear0828/codex-proxy/releases):
+Use a locally provided installer package for your platform:
 
 | Platform | Installer |
 |----------|-----------|
@@ -73,7 +70,7 @@ docker compose up -d
 # Open http://localhost:8080 to log in
 ```
 
-> Data persists in `data/`. Cross-container access: use host LAN IP (e.g. `192.168.x.x:8080`), not `localhost`. Uncomment Watchtower in `docker-compose.yml` for auto-updates.
+> Data persists in `data/`. Cross-container access: use host LAN IP (e.g. `192.168.x.x:8080`), not `localhost`.
 
 ### From Source
 

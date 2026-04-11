@@ -7,6 +7,7 @@ export function useAccounts() {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [addVisible, setAddVisible] = useState(false);
+  const [addAuthUrl, setAddAuthUrl] = useState("");
   const [addInfo, setAddInfo] = useState("");
   const [addError, setAddError] = useState("");
   const addCleanupRef = useRef<(() => void) | null>(null);
@@ -42,6 +43,7 @@ export function useAccounts() {
     const handler = async (event: MessageEvent) => {
       if (event.data?.type === "oauth-callback-success") {
         setAddVisible(false);
+        setAddAuthUrl("");
         setAddInfo("accountAdded");
         await loadAccounts();
       }
@@ -51,15 +53,20 @@ export function useAccounts() {
   }, [loadAccounts]);
 
   const startAdd = useCallback(async () => {
+    const isElectron = document.documentElement.classList.contains("electron");
     setAddInfo("");
     setAddError("");
+    setAddAuthUrl("");
     try {
       const resp = await fetch("/auth/login-start", { method: "POST" });
       const data = await resp.json();
       if (!resp.ok || !data.authUrl) {
         throw new Error(data.error || "failedStartLogin");
       }
-      window.open(data.authUrl, "oauth_add", "width=600,height=700,scrollbars=yes");
+      setAddAuthUrl(data.authUrl);
+      if (!isElectron) {
+        window.open(data.authUrl, "oauth_add", "width=600,height=700,scrollbars=yes");
+      }
       setAddVisible(true);
 
       // Poll for new account + focus/visibility detection
@@ -77,6 +84,7 @@ export function useAccounts() {
           if ((d.accounts?.length || 0) > prevCount) {
             cleanup();
             setAddVisible(false);
+            setAddAuthUrl("");
             setAddInfo("accountAdded");
             await loadAccounts();
           }
@@ -114,6 +122,7 @@ export function useAccounts() {
   const cancelAdd = useCallback(() => {
     addCleanupRef.current?.();
     setAddVisible(false);
+    setAddAuthUrl("");
     setAddInfo("");
     setAddError("");
   }, []);
@@ -135,6 +144,7 @@ export function useAccounts() {
         const data = await resp.json();
         if (resp.ok && data.success) {
           setAddVisible(false);
+          setAddAuthUrl("");
           setAddInfo("accountAdded");
           await loadAccounts();
         } else {
@@ -319,6 +329,7 @@ export function useAccounts() {
     refreshing,
     lastUpdated,
     addVisible,
+    addAuthUrl,
     addInfo,
     addError,
     refresh: useCallback(() => loadAccounts(true), [loadAccounts]),

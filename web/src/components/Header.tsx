@@ -14,10 +14,6 @@ const SVG_SUN = (
   </svg>
 );
 
-/**
- * Stable-width text: two invisible references (en + zh) set min-width via grid overlap.
- * The visible text overlays them, so the button never changes width on language switch.
- */
 function StableText({ tKey, children, class: cls }: { tKey: TranslationKey; children: string; class?: string }) {
   return (
     <span class={`inline-grid ${cls ?? ""}`}>
@@ -30,19 +26,11 @@ function StableText({ tKey, children, class: cls }: { tKey: TranslationKey; chil
 
 interface HeaderProps {
   onAddAccount: () => void;
-  onCheckUpdate: () => void;
-  onOpenUpdateModal?: () => void;
-  checking: boolean;
-  updateStatusMsg: string | null;
-  updateStatusColor: string;
-  version: string | null;
-  commit?: string | null;
   isProxySettings?: boolean;
-  hasUpdate?: boolean;
   onLogout?: () => void;
 }
 
-export function Header({ onAddAccount, onCheckUpdate, onOpenUpdateModal, checking, updateStatusMsg, updateStatusColor, version, commit, isProxySettings, hasUpdate, onLogout }: HeaderProps) {
+export function Header({ onAddAccount, isProxySettings, onLogout }: HeaderProps) {
   const { lang, toggleLang, t } = useI18n();
   const { isDark, toggle: toggleTheme } = useTheme();
 
@@ -50,7 +38,6 @@ export function Header({ onAddAccount, onCheckUpdate, onOpenUpdateModal, checkin
     <header class="sticky top-0 z-50 w-full bg-white dark:bg-card-dark border-b border-gray-200 dark:border-border-dark shadow-sm transition-colors">
       <div class="px-4 md:px-8 lg:px-40 flex h-14 items-center justify-center">
         <div class="flex w-full max-w-[960px] items-center justify-between">
-          {/* Logo & Title */}
           <div class="flex items-center gap-3">
             {isProxySettings ? (
               <a
@@ -73,7 +60,6 @@ export function Header({ onAddAccount, onCheckUpdate, onOpenUpdateModal, checkin
               </>
             )}
           </div>
-          {/* Actions */}
           <div class="flex items-center gap-2">
             <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
               <span class="relative flex h-2.5 w-2.5">
@@ -82,39 +68,6 @@ export function Header({ onAddAccount, onCheckUpdate, onOpenUpdateModal, checkin
               </span>
               <StableText tKey="serverOnline" class="text-xs font-semibold text-primary">{t("serverOnline")}</StableText>
             </div>
-            {/* Star on GitHub */}
-            <a
-              href="https://github.com/icebear0828/codex-proxy"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700/30 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
-            >
-              <svg class="size-3.5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-              </svg>
-              <StableText tKey="starOnGithub" class="text-xs font-semibold">{t("starOnGithub")}</StableText>
-            </a>
-            {/* Check for Updates */}
-            <button
-              onClick={onCheckUpdate}
-              disabled={checking}
-              class="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-border-dark text-slate-600 dark:text-text-dim hover:bg-slate-50 dark:hover:bg-border-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <svg class={`size-3.5 ${checking ? "animate-spin" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.992 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M20.985 4.356v4.992" />
-              </svg>
-              <StableText tKey="checkForUpdates" class="text-xs font-semibold">{checking ? t("checkingUpdates") : t("checkForUpdates")}</StableText>
-            </button>
-            {/* Update status message */}
-            {updateStatusMsg && !checking && (
-              <button
-                onClick={hasUpdate && onOpenUpdateModal ? onOpenUpdateModal : onCheckUpdate}
-                class={`hidden lg:inline whitespace-nowrap text-xs font-medium ${updateStatusColor} hover:underline`}
-              >
-                {updateStatusMsg}
-              </button>
-            )}
-            {/* Logout (remote sessions only) */}
             {onLogout && (
               <button
                 onClick={onLogout}
@@ -126,15 +79,13 @@ export function Header({ onAddAccount, onCheckUpdate, onOpenUpdateModal, checkin
                 <span class="hidden sm:inline"><StableText tKey="dashboardLogout" class="text-xs font-semibold">{t("dashboardLogout")}</StableText></span>
               </button>
             )}
-            {/* Language Toggle */}
             <button
               onClick={toggleLang}
               class="p-2 rounded-lg text-slate-500 dark:text-text-dim hover:bg-slate-100 dark:hover:bg-border-dark transition-colors"
-              title={"\u4e2d/EN"}
+              title={"中/EN"}
             >
-              <span class="text-xs font-bold inline-flex items-center justify-center w-5">{lang === "en" ? "EN" : "\u4e2d"}</span>
+              <span class="text-xs font-bold inline-flex items-center justify-center w-5">{lang === "en" ? "EN" : "中"}</span>
             </button>
-            {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
               class="p-2 rounded-lg text-slate-500 dark:text-text-dim hover:bg-slate-100 dark:hover:bg-border-dark transition-colors"
@@ -142,7 +93,6 @@ export function Header({ onAddAccount, onCheckUpdate, onOpenUpdateModal, checkin
             >
               {isDark ? SVG_SUN : SVG_MOON}
             </button>
-            {/* Proxy Settings / Add Account */}
             {isProxySettings ? null : (
               <>
                 <a

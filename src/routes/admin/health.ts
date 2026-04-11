@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { getConnInfo } from "@hono/node-server/conninfo";
-import { existsSync, readFileSync } from "fs";
+import { existsSync } from "fs";
 import { resolve } from "path";
 import type { AccountPool } from "../../auth/account-pool.js";
 import { getConfig, getFingerprint } from "../../config.js";
@@ -48,14 +48,6 @@ export function createHealthRoutes(accountPool: AccountPool): Hono {
       "automation-response.md": existsSync(resolve(promptsDir, "automation-response.md")),
     };
 
-    let updateState = null;
-    const statePath = resolve(getDataDir(), "update-state.json");
-    if (existsSync(statePath)) {
-      try {
-        updateState = JSON.parse(readFileSync(statePath, "utf-8"));
-      } catch {}
-    }
-
     return c.json({
       headers: {
         "User-Agent": ua,
@@ -81,7 +73,6 @@ export function createHealthRoutes(accountPool: AccountPool): Hono {
         ephemeral: null,
       },
       prompts_loaded: prompts,
-      update_state: updateState,
     });
   });
 

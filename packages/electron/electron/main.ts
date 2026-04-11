@@ -5,20 +5,12 @@
  * Loads the backend ESM modules from asarUnpack (real filesystem paths).
  */
 
-import { app, BrowserWindow, Tray, Menu, shell, nativeImage, dialog } from "electron";
+import { app, BrowserWindow, Tray, Menu, nativeImage, dialog } from "electron";
 import { resolve, join } from "path";
 import { pathToFileURL } from "url";
 import { existsSync, mkdirSync } from "fs";
-import {
-  initAutoUpdater,
-  getAutoUpdateState,
-  checkForUpdateManual,
-  installUpdate,
-  downloadUpdate,
-  stopAutoUpdater,
-} from "./auto-updater.js";
 import { IS_MAC } from "./constants.js";
-
+import { createLocalOnlyWindowOpenHandler, isAllowedLocalWindowUrl } from "./window-open-policy.js";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -26,21 +18,17 @@ let serverHandle: { close: () => Promise<void>; port: number } | null = null;
 let isQuitting = false;
 let allowProcessExit = false;
 
-// Single instance lock
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
 } else {
   app.on("second-instance", () => {
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.show();
-      mainWindow.focus();
-    }
+    if (!mainWindow) return;
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
   });
 }
-
-// ── macOS application menu ──────────────────────────────────────────
 
 function setupAppMenu(): void {
   if (!IS_MAC) return;
@@ -102,19 +90,15 @@ function setupAppMenu(): void {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
-// ── App ready ────────────────────────────────────────────────────────
-
 app.on("ready", async () => {
   setupAppMenu();
 
   try {
-    // 1. Determine paths — must happen before importing backend
     const userData = app.getPath("userData");
     const dataDir = resolve(userData, "data");
     if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
 
     const appRoot = app.getAppPath();
-    // In dev mode, resources (config/, public/, bin/) live at the monorepo root
     const monorepoRoot = resolve(appRoot, "..", "..");
     const distRoot = app.isPackaged
       ? resolve(process.resourcesPath, "app.asar.unpacked")
@@ -124,11 +108,9 @@ app.on("ready", async () => {
       ? resolve(process.resourcesPath, "bin")
       : resolve(monorepoRoot, "bin");
 
-    // 2. Import the bundled backend server (single ESM file, no node_modules needed)
     const serverUrl = pathToFileURL(resolve(appRoot, "dist-electron", "server.mjs")).href;
-    const { setPaths, startServer, getConfig } = await import(serverUrl);
+    const { setPaths, startServer } = await import(serverUrl);
 
-    // 3. Set paths before starting the server
     setPaths({
       rootDir: appRoot,
       configDir: resolve(distRoot, "config"),
@@ -137,7 +119,6 @@ app.on("ready", async () => {
       publicDir: resolve(distRoot, "public"),
     });
 
-    // 4. Start the proxy server (try configured port first, fall back to random if occupied)
     try {
       serverHandle = await startServer({ host: "127.0.0.1" });
     } catch {
@@ -146,28 +127,8 @@ app.on("ready", async () => {
     }
     console.log(`[Electron] Server started on port ${serverHandle.port}`);
 
-    // 4. System tray
     createTray();
-
-    // 5. Main window
     createWindow();
-
-    // 6. Auto-updater (only in packaged mode)
-    if (app.isPackaged) {
-      let autoUpdate = true;
-      let autoDownload = false;
-      try {
-        const updateCfg = getConfig().update;
-        autoUpdate = updateCfg.auto_update;
-        autoDownload = updateCfg.auto_download;
-      } catch { /* use defaults */ }
-      initAutoUpdater({
-        getMainWindow: () => mainWindow,
-        rebuildTrayMenu,
-        autoUpdate,
-        autoDownload,
-      });
-    }
   } catch (err) {
     console.error("[Electron] Startup failed:", err);
     dialog.showErrorBox(
@@ -177,8 +138,6 @@ app.on("ready", async () => {
     quitApplication();
   }
 });
-
-// ── Window ───────────────────────────────────────────────────────────
 
 function createWindow(): void {
   if (IS_MAC) app.dock?.show();
@@ -195,7 +154,6 @@ function createWindow(): void {
     minWidth: 800,
     minHeight: 500,
     title: "Codex Proxy",
-    // macOS: native hidden titlebar with traffic lights inset into content
     ...(IS_MAC
       ? {
           titleBarStyle: "hiddenInset",
@@ -212,7 +170,6 @@ function createWindow(): void {
   const port = serverHandle?.port ?? 8080;
   mainWindow.loadURL(`http://127.0.0.1:${port}/`);
 
-  // Mark <html> with platform class so frontend CSS can adapt
   mainWindow.webContents.on("did-finish-load", () => {
     const legacy = IS_MAC ? "electron-mac" : "electron-win";
     const platform = IS_MAC ? "platform-mac" : "platform-win";
@@ -225,7 +182,6 @@ function createWindow(): void {
     mainWindow?.show();
   });
 
-  // Close → hide to tray instead of quitting (unless app is quitting)
   mainWindow.on("close", (e) => {
     if (!isQuitting) {
       e.preventDefault();
@@ -234,10 +190,13 @@ function createWindow(): void {
     }
   });
 
-  // Open external links in the default browser
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
-    return { action: "deny" };
+  mainWindow.webContents.setWindowOpenHandler(
+    createLocalOnlyWindowOpenHandler(port),
+  );
+  mainWindow.webContents.on("will-navigate", (event, url) => {
+    if (!isAllowedLocalWindowUrl(url, port)) {
+      event.preventDefault();
+    }
   });
 
   mainWindow.on("closed", () => {
@@ -245,32 +204,34 @@ function createWindow(): void {
   });
 }
 
-// ── Tray ─────────────────────────────────────────────────────────────
-
 function quitApplication(): void {
   allowProcessExit = true;
   isQuitting = true;
 
-  if (serverHandle) {
-    const forceQuit = setTimeout(() => {
-      console.error("[Electron] Server close timeout, forcing exit");
-      app.exit(0);
-    }, 5000);
-
-    serverHandle.close()
-      .then(() => { clearTimeout(forceQuit); app.quit(); })
-      .catch((err: unknown) => {
-        console.error("[Electron] Server close error:", err);
-        clearTimeout(forceQuit);
-        app.quit();
-      });
-  } else {
+  if (!serverHandle) {
     app.quit();
+    return;
   }
+
+  const forceQuit = setTimeout(() => {
+    console.error("[Electron] Server close timeout, forcing exit");
+    app.exit(0);
+  }, 5000);
+
+  serverHandle.close()
+    .then(() => {
+      clearTimeout(forceQuit);
+      app.quit();
+    })
+    .catch((err: unknown) => {
+      console.error("[Electron] Server close error:", err);
+      clearTimeout(forceQuit);
+      app.quit();
+    });
 }
 
 function buildTrayMenu(): Electron.MenuItemConstructorOptions[] {
-  const items: Electron.MenuItemConstructorOptions[] = [
+  return [
     {
       label: "Open Dashboard",
       click: () => createWindow(),
@@ -281,55 +242,14 @@ function buildTrayMenu(): Electron.MenuItemConstructorOptions[] {
       enabled: false,
     },
     { type: "separator" },
-  ];
-
-  // Auto-update menu items
-  const updateState = getAutoUpdateState();
-  if (updateState.downloaded) {
-    items.push({
-      label: `Install Update (v${updateState.version})`,
-      click: () => installUpdate(),
-    });
-  } else if (updateState.downloading) {
-    items.push({
-      label: `Downloading Update... ${updateState.progress}%`,
-      enabled: false,
-    });
-  } else if (updateState.updateAvailable) {
-    items.push({
-      // macOS: no code signing — open release page for manual DMG download
-      label: IS_MAC && updateState.releaseUrl
-        ? `Open Release Page (v${updateState.version})`
-        : `Download Update (v${updateState.version})`,
-      click: () => downloadUpdate(),
-    });
-  } else {
-    items.push({
-      label: "Check for Updates",
-      click: () => checkForUpdateManual(),
-    });
-  }
-
-  items.push(
-    { type: "separator" },
     {
       label: "Quit",
       click: () => quitApplication(),
     },
-  );
-
-  return items;
-}
-
-function rebuildTrayMenu(): void {
-  if (tray) {
-    tray.setContextMenu(Menu.buildFromTemplate(buildTrayMenu()));
-  }
+  ];
 }
 
 function createTray(): void {
-  // In packaged mode: icon is inside asar at {app.asar}/electron/assets/icon.png
-  // In dev mode: relative to dist-electron/ → ../electron/assets/icon.png
   const iconPath = app.isPackaged
     ? join(app.getAppPath(), "electron", "assets", "icon.png")
     : join(__dirname, "..", "electron", "assets", "icon.png");
@@ -337,7 +257,6 @@ function createTray(): void {
     ? nativeImage.createFromPath(iconPath)
     : nativeImage.createEmpty();
 
-  // macOS: resize to 18x18 and mark as template for automatic dark/light adaptation
   if (IS_MAC && !icon.isEmpty()) {
     icon = icon.resize({ width: 18, height: 18 });
     icon.setTemplateImage(true);
@@ -349,14 +268,10 @@ function createTray(): void {
   tray.on("double-click", () => createWindow());
 }
 
-// macOS: re-create window when dock icon is clicked
 app.on("activate", () => {
   createWindow();
 });
 
-// Handle OS-initiated termination (system shutdown, logout).
-// SIGTERM → quitApplication() sets allowProcessExit synchronously before
-// before-quit fires, enabling graceful server cleanup instead of SIGKILL.
 process.on("SIGTERM", () => {
   if (!isQuitting) quitApplication();
 });
@@ -370,10 +285,8 @@ app.on("before-quit", (event) => {
   }
 
   isQuitting = true;
-  stopAutoUpdater();
 });
 
-// Prevent app from quitting when all windows are closed (tray keeps it alive)
 app.on("window-all-closed", () => {
-  // Do nothing — tray keeps the app running
+  // Tray keeps the app running.
 });

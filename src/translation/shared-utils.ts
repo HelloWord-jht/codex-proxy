@@ -21,7 +21,7 @@ let cachedDesktopContext: string | null = null;
 
 /**
  * Lazily load and cache the desktop context prompt.
- * File is maintained by apply-update.ts; cached once per process lifetime.
+ * Cached once per process lifetime to avoid repeated disk reads.
  */
 export function getDesktopContext(): string {
   if (cachedDesktopContext !== null) return cachedDesktopContext;

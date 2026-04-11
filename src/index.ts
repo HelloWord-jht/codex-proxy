@@ -20,8 +20,6 @@ import { CookieJar } from "./proxy/cookie-jar.js";
 import { ProxyPool } from "./proxy/proxy-pool.js";
 import { createProxyRoutes } from "./routes/proxies.js";
 import { createResponsesRoutes } from "./routes/responses.js";
-import { startUpdateChecker, stopUpdateChecker } from "./update-checker.js";
-import { startProxyUpdateChecker, stopProxyUpdateChecker, setCloseHandler, getDeployMode } from "./self-update.js";
 import { initProxy } from "./tls/proxy.js";
 import { cleanupStaleLocks } from "./auth/refresh-lock.js";
 import { initTransport, getTransport } from "./tls/transport.js";
@@ -202,11 +200,6 @@ export async function startServer(options?: StartOptions): Promise<ServerHandle>
 
   // Start background update checkers
   // (Electron has its own native auto-updater — skip proxy update checker)
-  startUpdateChecker();
-  if (getDeployMode() !== "electron") {
-    startProxyUpdateChecker();
-  }
-
   // Start background model refresh (requires auth to be ready)
   startModelRefresh(accountPool, cookieJar, proxyPool);
 
@@ -229,8 +222,6 @@ export async function startServer(options?: StartOptions): Promise<ServerHandle>
   const close = (): Promise<void> => {
     return new Promise((resolve) => {
       server.close(() => {
-        stopUpdateChecker();
-        stopProxyUpdateChecker();
         stopModelRefresh();
         stopQuotaRefresh();
         stopSessionCleanup();
@@ -242,9 +233,6 @@ export async function startServer(options?: StartOptions): Promise<ServerHandle>
       });
     });
   };
-
-  // Register close handler so self-update can attempt graceful shutdown before restart
-  setCloseHandler(close);
 
   return { close, port: actualPort };
 }

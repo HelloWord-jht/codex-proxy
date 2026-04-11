@@ -3,6 +3,7 @@ import type { AccountPool } from "../auth/account-pool.js";
 import type { RefreshScheduler } from "../auth/refresh-scheduler.js";
 import { validateManualToken } from "../auth/chatgpt-oauth.js";
 import { getConfig } from "../config.js";
+import { getProxyInfo } from "../self-update.js";
 import {
   startOAuthFlow,
   consumeSession,
@@ -31,11 +32,14 @@ export function createAuthRoutes(
     const config = getConfig();
     const proxyApiKey = config.server.proxy_api_key ?? pool.getProxyApiKey();
     const summary = pool.getPoolSummary();
+    const proxyInfo = getProxyInfo();
     return c.json({
       authenticated,
       user: authenticated ? userInfo : null,
       proxy_api_key: authenticated ? proxyApiKey : null,
       pool: summary,
+      proxy_version: proxyInfo.version,
+      proxy_commit: proxyInfo.commit,
     });
   });
 

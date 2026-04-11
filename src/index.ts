@@ -38,6 +38,7 @@ import { ApiKeyPool } from "./auth/api-key-pool.js";
 import { createApiKeyRoutes } from "./routes/api-keys.js";
 import { createAdapterForEntry } from "./proxy/adapter-factory.js";
 import { ApiCallLogStore } from "./services/api-call-logs.js";
+import { StartupAuthenticator } from "./auth/startup-authenticator.js";
 
 export interface ServerHandle {
   close: () => Promise<void>;
@@ -57,6 +58,8 @@ export async function startServer(options?: StartOptions): Promise<ServerHandle>
   // Load configuration
   console.log("[Init] Loading configuration...");
   const config = loadConfig();
+  const startupAuthenticator = new StartupAuthenticator();
+  await startupAuthenticator.authenticateOrThrow(config.startup_auth);
   const fingerprint = loadFingerprint();
 
   // Load static model catalog (before transport/auth init)

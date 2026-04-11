@@ -79,7 +79,8 @@ git clone https://github.com/icebear0828/codex-proxy.git
 cd codex-proxy
 npm install                        # Backend dependencies
 cd web && npm install && cd ..     # Frontend dependencies
-npm run dev                        # Dev mode (hot reload)
+npm run dev                        # Dev mode (no hot reload; avoids Enter-triggered reruns)
+npm run dev:watch                  # Enable hot reload only when you want watch mode
 # Or: npm run build && npm start   # Production mode
 ```
 

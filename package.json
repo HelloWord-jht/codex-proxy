@@ -14,7 +14,8 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx src/index.ts",
+    "dev:watch": "tsx watch src/index.ts",
     "dev:web": "cd web && npx vite",
     "build:web": "cd web && npx vite build",
     "build": "npm run build:web && tsc",

@@ -36,6 +36,14 @@ export const ConfigSchema = z.object({
     oauth_auth_endpoint: z.string().default("https://auth.openai.com/oauth/authorize"),
     oauth_token_endpoint: z.string().default("https://auth.openai.com/oauth/token"),
   }),
+  startup_auth: z.object({
+    enabled: z.boolean().default(true),
+    endpoint: z.string().default(""),
+    secretKey: z.string().nullable().default(null),
+    instanceId: z.string().default("auto"),
+    clientIp: z.string().default("auto"),
+    requestTimeoutMs: z.number().int().min(1).default(3000),
+  }).default({}),
   server: z.object({
     host: z.string().default("0.0.0.0"),
     port: z.number().min(1).max(65535).default(8080),

@@ -3,6 +3,13 @@ import { resolve } from "path";
 import yaml from "js-yaml";
 import { getConfigDir, getDataDir } from "./paths.js";
 
+function parseBooleanEnv(value: string): boolean | null {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "true" || normalized === "1") return true;
+  if (normalized === "false" || normalized === "0") return false;
+  return null;
+}
+
 export function loadYaml(filePath: string): unknown {
   const content = readFileSync(filePath, "utf-8");
   return yaml.load(content);
@@ -97,6 +104,56 @@ export function applyEnvOverrides(
     if (proxyEnv) {
       if (!raw.tls) raw.tls = {};
       (raw.tls as Record<string, unknown>).proxy_url = proxyEnv;
+    }
+  }
+  const startupAuthEnvConfigured =
+    process.env.STARTUP_AUTH_ENABLED !== undefined ||
+    process.env.STARTUP_AUTH_ENDPOINT !== undefined ||
+    process.env.STARTUP_AUTH_SECRET_KEY !== undefined ||
+    process.env.STARTUP_AUTH_INSTANCE_ID !== undefined ||
+    process.env.STARTUP_AUTH_CLIENT_IP !== undefined ||
+    process.env.STARTUP_AUTH_REQUEST_TIMEOUT_MS !== undefined;
+
+  if (startupAuthEnvConfigured) {
+    if (
+      raw.startup_auth === undefined ||
+      raw.startup_auth === null ||
+      typeof raw.startup_auth !== "object" ||
+      Array.isArray(raw.startup_auth)
+    ) {
+      raw.startup_auth = {};
+    }
+
+    const startupAuth = raw.startup_auth as Record<string, unknown>;
+
+    if (process.env.STARTUP_AUTH_ENABLED !== undefined) {
+      const parsed = parseBooleanEnv(process.env.STARTUP_AUTH_ENABLED);
+      if (parsed === null) {
+        console.warn("[Config] STARTUP_AUTH_ENABLED ignored: expected true/false/1/0");
+      } else {
+        startupAuth.enabled = parsed;
+      }
+    }
+    if (process.env.STARTUP_AUTH_ENDPOINT !== undefined) {
+      startupAuth.endpoint = process.env.STARTUP_AUTH_ENDPOINT.trim();
+    }
+    if (process.env.STARTUP_AUTH_SECRET_KEY !== undefined) {
+      const secretKey = process.env.STARTUP_AUTH_SECRET_KEY.trim();
+      startupAuth.secretKey = secretKey.length > 0 ? secretKey : null;
+    }
+    if (process.env.STARTUP_AUTH_INSTANCE_ID !== undefined) {
+      startupAuth.instanceId = process.env.STARTUP_AUTH_INSTANCE_ID.trim();
+    }
+    if (process.env.STARTUP_AUTH_CLIENT_IP !== undefined) {
+      startupAuth.clientIp = process.env.STARTUP_AUTH_CLIENT_IP.trim();
+    }
+    if (process.env.STARTUP_AUTH_REQUEST_TIMEOUT_MS !== undefined) {
+      const parsed = Number.parseInt(process.env.STARTUP_AUTH_REQUEST_TIMEOUT_MS, 10);
+      if (Number.isNaN(parsed)) {
+        console.warn("[Config] STARTUP_AUTH_REQUEST_TIMEOUT_MS ignored: expected an integer");
+      } else {
+        startupAuth.requestTimeoutMs = parsed;
+      }
     }
   }
   return raw;

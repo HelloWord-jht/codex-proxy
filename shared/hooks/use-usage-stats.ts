@@ -46,7 +46,25 @@ export interface ApiCallLogRecord {
   error_message: string;
 }
 
+export interface ApiCallLogsResponse {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  items: ApiCallLogRecord[];
+}
+
 export type Granularity = "raw" | "hourly" | "daily";
+
+function normalizePage(value: number | undefined): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 1;
+  return Math.max(1, Math.trunc(value));
+}
+
+function normalizePageSize(value: number | undefined): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 10;
+  return Math.min(50, Math.max(10, Math.trunc(value)));
+}
 
 export function useUsageSummary(refreshIntervalMs = 30_000) {
   const [summary, setSummary] = useState<UsageSummary | null>(null);
@@ -96,22 +114,36 @@ export function useUsageHistory(granularity: Granularity, hours: number, refresh
   return { dataPoints, loading };
 }
 
-export function useApiCallLogs(limit = 100, refreshIntervalMs = 30_000) {
-  const [items, setItems] = useState<ApiCallLogRecord[]>([]);
-  const [total, setTotal] = useState(0);
+export function useApiCallLogs(page = 1, pageSize = 10, refreshIntervalMs = 30_000) {
+  const normalizedPage = normalizePage(page);
+  const normalizedPageSize = normalizePageSize(pageSize);
+  const [result, setResult] = useState<ApiCallLogsResponse>({
+    page: normalizedPage,
+    pageSize: normalizedPageSize,
+    total: 0,
+    totalPages: 1,
+    items: [],
+  });
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     try {
-      const resp = await fetch(`/admin/usage-stats/call-logs?limit=${limit}`);
+      const resp = await fetch(
+        `/admin/usage-stats/call-logs?page=${normalizedPage}&pageSize=${normalizedPageSize}`,
+      );
       if (resp.ok) {
-        const body = await resp.json();
-        setItems(body.items ?? []);
-        setTotal(body.total ?? 0);
+        const body = await resp.json() as Partial<ApiCallLogsResponse>;
+        setResult({
+          page: typeof body.page === "number" ? body.page : normalizedPage,
+          pageSize: typeof body.pageSize === "number" ? body.pageSize : normalizedPageSize,
+          total: typeof body.total === "number" ? body.total : 0,
+          totalPages: typeof body.totalPages === "number" ? body.totalPages : 1,
+          items: Array.isArray(body.items) ? body.items : [],
+        });
       }
     } catch { /* ignore */ }
     setLoading(false);
-  }, [limit]);
+  }, [normalizedPage, normalizedPageSize]);
 
   useEffect(() => {
     setLoading(true);
@@ -120,5 +152,5 @@ export function useApiCallLogs(limit = 100, refreshIntervalMs = 30_000) {
     return () => clearInterval(id);
   }, [load, refreshIntervalMs]);
 
-  return { items, total, loading };
+  return { ...result, loading };
 }

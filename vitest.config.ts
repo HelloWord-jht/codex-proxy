@@ -11,6 +11,9 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // Electron packaging tests mutate shared workspace folders under
+    // packages/electron/, so file-level parallelism makes them race.
+    fileParallelism: false,
     include: [
       "src/**/*.{test,spec}.ts",
       "shared/**/*.{test,spec}.ts",

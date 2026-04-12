@@ -9,6 +9,29 @@ function createStore() {
   return new ApiCallLogStore(persistence);
 }
 
+function seedCalls(store: ApiCallLogStore, count: number) {
+  for (let index = 0; index < count; index += 1) {
+    const startedAt = new Date(Date.UTC(2026, 3, 11, 0, index, 0)).toISOString();
+    const finishedAt = new Date(Date.UTC(2026, 3, 11, 0, index, 30)).toISOString();
+    const id = store.startCall({
+      interface_identifier: `provider.call.${index}`,
+      interface_name: `Call ${index}`,
+      interface_url: `https://example.com/${index}`,
+      provider_tag: "openai",
+      model: `model-${index}`,
+      started_at: startedAt,
+    });
+
+    store.completeCall(id, {
+      finished_at: finishedAt,
+      status: "success",
+      is_success: true,
+      input_tokens: index,
+      output_tokens: index + 1,
+    });
+  }
+}
+
 describe("ApiCallLogStore", () => {
   it("records success calls with token totals", () => {
     const store = createStore();
@@ -96,5 +119,39 @@ describe("ApiCallLogStore", () => {
 
     const store = new ApiCallLogStore(persistence);
     expect(store.getLogs().items[0].model).toBe("");
+  });
+
+  it("supports paginated logs with descending order and empty out-of-range pages", () => {
+    const store = createStore();
+    seedCalls(store, 12);
+
+    const pageOne = store.getLogs(1, 10);
+    expect(pageOne.page).toBe(1);
+    expect(pageOne.pageSize).toBe(10);
+    expect(pageOne.total).toBe(12);
+    expect(pageOne.totalPages).toBe(2);
+    expect(pageOne.items).toHaveLength(10);
+    expect(pageOne.items[0].model).toBe("model-11");
+    expect(pageOne.items[9].model).toBe("model-2");
+
+    const pageTwo = store.getLogs(2, 10);
+    expect(pageTwo.page).toBe(2);
+    expect(pageTwo.pageSize).toBe(10);
+    expect(pageTwo.total).toBe(12);
+    expect(pageTwo.totalPages).toBe(2);
+    expect(pageTwo.items).toHaveLength(2);
+    expect(pageTwo.items[0].model).toBe("model-1");
+    expect(pageTwo.items[1].model).toBe("model-0");
+
+    const normalizedPageSize = store.getLogs(1, 1);
+    expect(normalizedPageSize.pageSize).toBe(10);
+    expect(normalizedPageSize.totalPages).toBe(2);
+
+    const outOfRange = store.getLogs(3, 10);
+    expect(outOfRange.page).toBe(3);
+    expect(outOfRange.pageSize).toBe(10);
+    expect(outOfRange.total).toBe(12);
+    expect(outOfRange.totalPages).toBe(2);
+    expect(outOfRange.items).toEqual([]);
   });
 });

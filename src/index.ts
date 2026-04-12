@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
-import { loadConfig, loadFingerprint, getConfig, hasLocalOverride } from "./config.js";
+import { reloadConfig, reloadFingerprint, getConfig, hasLocalOverride } from "./config.js";
 import { initContext } from "./context.js";
 import { AccountPool } from "./auth/account-pool.js";
 import { RefreshScheduler } from "./auth/refresh-scheduler.js";
@@ -55,12 +55,12 @@ export interface StartOptions {
  * Throws on config errors instead of calling process.exit().
  */
 export async function startServer(options?: StartOptions): Promise<ServerHandle> {
-  // Load configuration
+  // Always reload from disk so Electron startup-auth retries pick up a newly entered secretKey.
   console.log("[Init] Loading configuration...");
-  const config = loadConfig();
+  const config = reloadConfig();
   const startupAuthenticator = new StartupAuthenticator();
   await startupAuthenticator.authenticateOrThrow(config.startup_auth);
-  const fingerprint = loadFingerprint();
+  const fingerprint = reloadFingerprint();
 
   // Load static model catalog (before transport/auth init)
   loadStaticModels();

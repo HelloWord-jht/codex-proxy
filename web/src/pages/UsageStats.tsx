@@ -32,6 +32,12 @@ function UsageContent({
   dataPoints,
   historyLoading,
   callLogs,
+  callLogsPage,
+  callLogsPageSize,
+  callLogsTotal,
+  callLogsTotalPages,
+  setCallLogsPage,
+  setCallLogsPageSize,
   callLogsLoading,
 }: {
   t: (key: TranslationKey) => string;
@@ -44,6 +50,12 @@ function UsageContent({
   dataPoints: ReturnType<typeof useUsageHistory>["dataPoints"];
   historyLoading: boolean;
   callLogs: ApiCallLogRecord[];
+  callLogsPage: number;
+  callLogsPageSize: number;
+  callLogsTotal: number;
+  callLogsTotalPages: number;
+  setCallLogsPage: (page: number) => void;
+  setCallLogsPageSize: (pageSize: number) => void;
   callLogsLoading: boolean;
 }) {
   const apiCalls = summary?.api_calls;
@@ -111,48 +123,97 @@ function UsageContent({
         <div class="text-sm font-semibold text-slate-800 dark:text-text-main mb-4">{t("apiCallRecords")}</div>
         {callLogsLoading ? (
           <div class="text-center py-12 text-slate-400 dark:text-text-dim text-sm">Loading...</div>
-        ) : callLogs.length === 0 ? (
-          <div class="text-center py-12 text-slate-400 dark:text-text-dim text-sm">{t("noApiCallRecords")}</div>
         ) : (
-          <div class="overflow-x-auto">
-            <table class="min-w-full text-xs">
-              <thead>
-                <tr class="border-b border-gray-200 dark:border-border-dark text-slate-500 dark:text-text-dim">
-                  <th class="text-left py-2 pr-3">{t("callStatus")}</th>
-                  <th class="text-left py-2 pr-3">{t("modelInfo")}</th>
-                  <th class="text-left py-2 pr-3">{t("interfaceNameOrUrl")}</th>
-                  <th class="text-left py-2 pr-3">{t("callTime")}</th>
-                  <th class="text-left py-2 pr-3">{t("callFinishedTime")}</th>
-                  <th class="text-left py-2 pr-3">{t("durationMs")}</th>
-                  <th class="text-left py-2 pr-3">{t("tokenConsumption")}</th>
-                  <th class="text-left py-2">{t("errorMessage")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {callLogs.map((item) => (
-                  <tr key={item.id} class="border-b border-gray-100 dark:border-border-dark/60 align-top">
-                    <td class="py-3 pr-3">
-                      <StatusBadge success={item.is_success} status={item.call_status} t={t} />
-                    </td>
-                    <td class="py-3 pr-3 text-slate-700 dark:text-text-main whitespace-nowrap">
-                      <span class="font-mono">{item.model || "-"}</span>
-                    </td>
-                    <td class="py-3 pr-3 text-slate-700 dark:text-text-main">
-                      <div class="font-medium">{item.interface_name || item.interface_identifier}</div>
-                      <div class="text-slate-400 dark:text-text-dim break-all">{item.interface_url}</div>
-                    </td>
-                    <td class="py-3 pr-3 text-slate-600 dark:text-text-dim whitespace-nowrap">{formatDateTime(item.call_started_at)}</td>
-                    <td class="py-3 pr-3 text-slate-600 dark:text-text-dim whitespace-nowrap">{item.call_finished_at ? formatDateTime(item.call_finished_at) : "-"}</td>
-                    <td class="py-3 pr-3 text-slate-600 dark:text-text-dim whitespace-nowrap">{formatNumber(item.duration_ms)} ms</td>
-                    <td class="py-3 pr-3 text-slate-600 dark:text-text-dim whitespace-nowrap">
-                      {formatNumber(item.total_tokens)} ({formatNumber(item.input_tokens)}/{formatNumber(item.output_tokens)})
-                    </td>
-                    <td class="py-3 text-slate-600 dark:text-text-dim break-all">{item.error_message || "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {callLogsTotal === 0 ? (
+              <div class="text-center py-12 text-slate-400 dark:text-text-dim text-sm">{t("noApiCallRecords")}</div>
+            ) : (
+              <div class="overflow-x-auto">
+                <table class="min-w-full text-xs">
+                  <thead>
+                    <tr class="border-b border-gray-200 dark:border-border-dark text-slate-500 dark:text-text-dim">
+                      <th class="text-left py-2 pr-3">{t("callStatus")}</th>
+                      <th class="text-left py-2 pr-3">{t("modelInfo")}</th>
+                      <th class="text-left py-2 pr-3">{t("interfaceNameOrUrl")}</th>
+                      <th class="text-left py-2 pr-3">{t("callTime")}</th>
+                      <th class="text-left py-2 pr-3">{t("callFinishedTime")}</th>
+                      <th class="text-left py-2 pr-3">{t("durationMs")}</th>
+                      <th class="text-left py-2 pr-3">{t("tokenConsumption")}</th>
+                      <th class="text-left py-2">{t("errorMessage")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {callLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} class="py-8 text-center text-slate-400 dark:text-text-dim">
+                          -
+                        </td>
+                      </tr>
+                    ) : (
+                      callLogs.map((item) => (
+                        <tr key={item.id} class="border-b border-gray-100 dark:border-border-dark/60 align-top">
+                          <td class="py-3 pr-3">
+                            <StatusBadge success={item.is_success} status={item.call_status} t={t} />
+                          </td>
+                          <td class="py-3 pr-3 text-slate-700 dark:text-text-main whitespace-nowrap">
+                            <span class="font-mono">{item.model || "-"}</span>
+                          </td>
+                          <td class="py-3 pr-3 text-slate-700 dark:text-text-main">
+                            <div class="font-medium">{item.interface_name || item.interface_identifier}</div>
+                            <div class="text-slate-400 dark:text-text-dim break-all">{item.interface_url}</div>
+                          </td>
+                          <td class="py-3 pr-3 text-slate-600 dark:text-text-dim whitespace-nowrap">{formatDateTime(item.call_started_at)}</td>
+                          <td class="py-3 pr-3 text-slate-600 dark:text-text-dim whitespace-nowrap">{item.call_finished_at ? formatDateTime(item.call_finished_at) : "-"}</td>
+                          <td class="py-3 pr-3 text-slate-600 dark:text-text-dim whitespace-nowrap">{formatNumber(item.duration_ms)} ms</td>
+                          <td class="py-3 pr-3 text-slate-600 dark:text-text-dim whitespace-nowrap">
+                            {formatNumber(item.total_tokens)} ({formatNumber(item.input_tokens)}/{formatNumber(item.output_tokens)})
+                          </td>
+                          <td class="py-3 text-slate-600 dark:text-text-dim break-all">{item.error_message || "-"}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div class="mt-4 flex flex-col gap-3 text-xs text-slate-500 dark:text-text-dim sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex items-center gap-2">
+                <select
+                  value={String(callLogsPageSize)}
+                  onChange={(e) => setCallLogsPageSize(parseInt((e.target as HTMLSelectElement).value, 10))}
+                  class="px-2.5 py-1 rounded-md border border-gray-200 dark:border-border-dark bg-white dark:bg-bg-dark text-slate-700 dark:text-text-main focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                  aria-label="Page size"
+                >
+                  <option value="10">10 / page</option>
+                  <option value="20">20 / page</option>
+                  <option value="50">50 / page</option>
+                </select>
+                <span>
+                  {t("totalItems")} {formatNumber(callLogsTotal)}
+                </span>
+              </div>
+              <div class="flex items-center gap-2 self-start sm:self-auto">
+                <button
+                  onClick={() => setCallLogsPage(Math.max(1, callLogsPage - 1))}
+                  disabled={callLogsPage <= 1}
+                  class="px-2.5 py-1 rounded-md border border-gray-200 dark:border-border-dark hover:bg-slate-50 dark:hover:bg-border-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {t("prevPage")}
+                </button>
+                <span class="font-medium text-slate-700 dark:text-text-main">
+                  {callLogsPage} / {callLogsTotalPages}
+                </span>
+                <button
+                  onClick={() => setCallLogsPage(callLogsPage + 1)}
+                  disabled={callLogsPage >= callLogsTotalPages}
+                  class="px-2.5 py-1 rounded-md border border-gray-200 dark:border-border-dark hover:bg-slate-50 dark:hover:bg-border-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {t("nextPage")}
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </>
@@ -164,8 +225,17 @@ export function UsageStats({ embedded }: { embedded?: boolean } = {}) {
   const { summary, loading: summaryLoading } = useUsageSummary();
   const [granularity, setGranularity] = useState<Granularity>("hourly");
   const [hours, setHours] = useState(24);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const { dataPoints, loading: historyLoading } = useUsageHistory(granularity, hours);
-  const { items: callLogs, loading: callLogsLoading } = useApiCallLogs();
+  const {
+    items: callLogs,
+    page: callLogsPage,
+    pageSize: callLogsPageSize,
+    total: callLogsTotal,
+    totalPages: callLogsTotalPages,
+    loading: callLogsLoading,
+  } = useApiCallLogs(page, pageSize);
 
   const contentProps = {
     t,
@@ -178,6 +248,15 @@ export function UsageStats({ embedded }: { embedded?: boolean } = {}) {
     dataPoints,
     historyLoading,
     callLogs,
+    callLogsPage,
+    callLogsPageSize,
+    callLogsTotal,
+    callLogsTotalPages,
+    setCallLogsPage: setPage,
+    setCallLogsPageSize: (nextPageSize: number) => {
+      setPageSize(nextPageSize);
+      setPage(1);
+    },
     callLogsLoading,
   };
 

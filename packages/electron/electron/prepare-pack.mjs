@@ -7,8 +7,8 @@
  *   node electron/prepare-pack.mjs --clean  # remove copies
  */
 
-import { cpSync, rmSync, existsSync } from "fs";
-import { resolve } from "path";
+import { cpSync, rmSync, existsSync, mkdirSync } from "fs";
+import { resolve, relative } from "path";
 
 const ROOT = resolve(import.meta.dirname, "..", "..", "..");
 const PKG = resolve(import.meta.dirname, "..");
@@ -27,6 +27,11 @@ for (const dir of DIRS) {
     }
   } else {
     if (!existsSync(src)) {
+      if (dir === "bin") {
+        mkdirSync(dest, { recursive: true });
+        console.log("[prepare-pack] created empty bin/ placeholder");
+        continue;
+      }
       console.warn(`[prepare-pack] skipping ${dir}/ (not found at ${src})`);
       continue;
     }
@@ -52,15 +57,17 @@ if (isClean) {
 } else if (!existsSync(nativeSrc)) {
   console.warn(`[prepare-pack] skipping native/ (not found at ${nativeSrc})`);
 } else {
+  if (existsSync(nativeDest)) {
+    rmSync(nativeDest, { recursive: true });
+  }
   cpSync(nativeSrc, nativeDest, {
     recursive: true,
     force: true,
     filter: (src) => {
-      const rel = src.slice(nativeSrc.length);
-      // Skip Rust source, build artifacts, and node_modules
-      if (/\/(target|node_modules|src)(\/|$)/.test(rel)) return false;
-      if (/\/(Cargo\.(toml|lock)|build\.rs|\.cargo)/.test(rel)) return false;
-      return true;
+      const rel = relative(nativeSrc, src).replace(/\\/g, "/");
+      if (rel === "") return true;
+      if (rel.includes("/")) return false;
+      return /^(index\.js|index\.d\.ts|package\.json|.+\.node)$/.test(rel);
     },
   });
   console.log("[prepare-pack] copied native/ (runtime only) → packages/electron/native/");

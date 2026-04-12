@@ -123,6 +123,30 @@ server:
     expect(hasLocalOverride("server", "host")).toBe(true);
   });
 
+  it("reloads an updated startup_auth.secretKey from local.yaml", async () => {
+    const localYaml = `
+startup_auth:
+  enabled: true
+  endpoint: "https://example.com/auth/startup"
+  secretKey: "old-secret"
+`;
+    const configDir = makeTempConfig(MINIMAL_DEFAULT, localYaml);
+    const { loadConfig, reloadConfig } = await import("../config.js");
+
+    const initialConfig = loadConfig(configDir);
+    expect(initialConfig.startup_auth.secretKey).toBe("old-secret");
+
+    const dataDir = resolve(configDir, "..", "data");
+    writeFileSync(
+      resolve(dataDir, "local.yaml"),
+      `startup_auth:\n  enabled: true\n  endpoint: "https://example.com/auth/startup"\n  secretKey: "new-secret"\n`,
+      "utf-8",
+    );
+
+    const reloadedConfig = reloadConfig(configDir);
+    expect(reloadedConfig.startup_auth.secretKey).toBe("new-secret");
+  });
+
   it("returns false when local.yaml has unrelated keys only", async () => {
     const localYaml = `
 auth:

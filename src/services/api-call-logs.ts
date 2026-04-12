@@ -40,7 +40,10 @@ export interface ApiCallLogSummary {
 }
 
 export interface ApiCallLogListResult {
+  page: number;
+  pageSize: number;
   total: number;
+  totalPages: number;
   items: ApiCallLogRecord[];
 }
 
@@ -51,6 +54,16 @@ interface ApiCallLogFile {
 
 function normalizeModel(value: unknown): string {
   return typeof value === "string" ? value : "";
+}
+
+function normalizePage(value: number | undefined): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 1;
+  return Math.max(1, Math.trunc(value));
+}
+
+function normalizePageSize(value: number | undefined): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 10;
+  return Math.min(50, Math.max(10, Math.trunc(value)));
 }
 
 function normalizeRecord(record: Partial<ApiCallLogRecord>): ApiCallLogRecord {
@@ -234,13 +247,21 @@ export class ApiCallLogStore {
     });
   }
 
-  getLogs(limit = 100): ApiCallLogListResult {
-    const normalizedLimit = Math.min(Math.max(1, limit), 500);
-    const items = [...this.records]
-      .sort((a, b) => new Date(b.call_started_at).getTime() - new Date(a.call_started_at).getTime())
-      .slice(0, normalizedLimit);
+  getLogs(page = 1, pageSize = 10): ApiCallLogListResult {
+    const normalizedPage = normalizePage(page);
+    const normalizedPageSize = normalizePageSize(pageSize);
+    const sorted = [...this.records]
+      .sort((a, b) => new Date(b.call_started_at).getTime() - new Date(a.call_started_at).getTime());
+    const total = sorted.length;
+    const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+    const startIndex = (normalizedPage - 1) * normalizedPageSize;
+    const items = sorted.slice(startIndex, startIndex + normalizedPageSize);
+
     return {
-      total: this.records.length,
+      page: normalizedPage,
+      pageSize: normalizedPageSize,
+      total,
+      totalPages,
       items,
     };
   }

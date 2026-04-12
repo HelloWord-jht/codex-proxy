@@ -10,6 +10,20 @@ import type { AccountPool } from "../../auth/account-pool.js";
 import type { UsageStatsStore } from "../../auth/usage-stats.js";
 import type { ApiCallLogStore } from "../../services/api-call-logs.js";
 
+function normalizePage(value: string | undefined): number {
+  const parsed = Number.parseInt(value ?? "1", 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return 1;
+  return parsed;
+}
+
+function normalizePageSize(value: string | undefined): number {
+  const parsed = Number.parseInt(value ?? "10", 10);
+  if (!Number.isFinite(parsed)) return 10;
+  if (parsed < 10) return 10;
+  if (parsed > 50) return 50;
+  return parsed;
+}
+
 export function createUsageStatsRoutes(
   pool: AccountPool,
   statsStore: UsageStatsStore,
@@ -52,11 +66,21 @@ export function createUsageStatsRoutes(
   });
 
   app.get("/admin/usage-stats/call-logs", (c) => {
-    const limit = Math.min(Math.max(1, parseInt(c.req.query("limit") ?? "100", 10) || 100), 500);
-    const result = apiCallLogs?.getLogs(limit) ?? { total: 0, items: [] };
+    const page = normalizePage(c.req.query("page"));
+    const pageSize = normalizePageSize(c.req.query("pageSize"));
+    const result = apiCallLogs?.getLogs(page, pageSize) ?? {
+      page: 1,
+      pageSize: 10,
+      total: 0,
+      totalPages: 1,
+      items: [],
+    };
+
     return c.json({
-      limit,
+      page: result.page,
+      pageSize: result.pageSize,
       total: result.total,
+      totalPages: result.totalPages,
       items: result.items,
     });
   });

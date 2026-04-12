@@ -42,6 +42,28 @@ function createLogStore(): ApiCallLogStore {
   return new ApiCallLogStore(persistence);
 }
 
+function seedCalls(store: ApiCallLogStore, count: number) {
+  for (let index = 0; index < count; index += 1) {
+    const startedAt = new Date(Date.UTC(2026, 3, 11, 0, index, 0)).toISOString();
+    const finishedAt = new Date(Date.UTC(2026, 3, 11, 0, index, 30)).toISOString();
+    const id = store.startCall({
+      interface_identifier: `openai.chat.completions.${index}`,
+      interface_name: `OpenAI /chat/completions ${index}`,
+      interface_url: `https://api.openai.com/v1/chat/completions/${index}`,
+      provider_tag: "openai",
+      model: `gpt-4o-${index}`,
+      started_at: startedAt,
+    });
+    store.completeCall(id, {
+      finished_at: finishedAt,
+      status: "success",
+      is_success: true,
+      input_tokens: index + 1,
+      output_tokens: index + 2,
+    });
+  }
+}
+
 describe("usage stats routes", () => {
   describe("GET /admin/usage-stats/summary", () => {
     it("returns cumulative totals", async () => {
@@ -133,36 +155,60 @@ describe("usage stats routes", () => {
   });
 
   describe("GET /admin/usage-stats/call-logs", () => {
-    it("returns api call log list", async () => {
+    it("returns paginated api call log list", async () => {
       const pool = createMockPool({ input_tokens: 0, output_tokens: 0, request_count: 0 });
       const store = createStore();
       const logStore = createLogStore();
-      const successId = logStore.startCall({
-        interface_identifier: "openai.chat.completions",
-        interface_name: "OpenAI /chat/completions",
-        interface_url: "https://api.openai.com/v1/chat/completions",
-        provider_tag: "openai",
-        model: "gpt-4o",
-      });
-      logStore.completeCall(successId, {
-        status: "success",
-        is_success: true,
-        input_tokens: 12,
-        output_tokens: 8,
-      });
+      seedCalls(logStore, 12);
 
       const app = new Hono();
       app.route("/", createUsageStatsRoutes(pool, store, logStore));
 
-      const res = await app.request("/admin/usage-stats/call-logs?limit=10");
+      const res = await app.request("/admin/usage-stats/call-logs?page=2&pageSize=10");
       expect(res.status).toBe(200);
 
       const body = await res.json();
-      expect(body.total).toBe(1);
-      expect(body.items).toHaveLength(1);
-      expect(body.items[0].interface_identifier).toBe("openai.chat.completions");
-      expect(body.items[0].model).toBe("gpt-4o");
-      expect(body.items[0].total_tokens).toBe(20);
+      expect(Object.keys(body).sort()).toEqual(["items", "page", "pageSize", "total", "totalPages"].sort());
+      expect(body.page).toBe(2);
+      expect(body.pageSize).toBe(10);
+      expect(body.total).toBe(12);
+      expect(body.totalPages).toBe(2);
+      expect(body.items).toHaveLength(2);
+      expect(body.items[0].interface_identifier).toBe("openai.chat.completions.1");
+      expect(body.items[0].model).toBe("gpt-4o-1");
+      expect(body.items[1].interface_identifier).toBe("openai.chat.completions.0");
+    });
+
+    it("normalizes page and pageSize query parameters", async () => {
+      const pool = createMockPool({ input_tokens: 0, output_tokens: 0, request_count: 0 });
+      const store = createStore();
+      const logStore = createLogStore();
+      seedCalls(logStore, 60);
+
+      const app = new Hono();
+      app.route("/", createUsageStatsRoutes(pool, store, logStore));
+
+      const lowerBoundRes = await app.request("/admin/usage-stats/call-logs?page=0&pageSize=1");
+      expect(lowerBoundRes.status).toBe(200);
+      const lowerBoundBody = await lowerBoundRes.json();
+      expect(lowerBoundBody.page).toBe(1);
+      expect(lowerBoundBody.pageSize).toBe(10);
+      expect(lowerBoundBody.total).toBe(60);
+      expect(lowerBoundBody.totalPages).toBe(6);
+      expect(lowerBoundBody.items).toHaveLength(10);
+      expect(lowerBoundBody.items[0].model).toBe("gpt-4o-59");
+      expect(lowerBoundBody.items[9].model).toBe("gpt-4o-50");
+
+      const upperBoundRes = await app.request("/admin/usage-stats/call-logs?page=1&pageSize=999");
+      expect(upperBoundRes.status).toBe(200);
+      const upperBoundBody = await upperBoundRes.json();
+      expect(upperBoundBody.page).toBe(1);
+      expect(upperBoundBody.pageSize).toBe(50);
+      expect(upperBoundBody.total).toBe(60);
+      expect(upperBoundBody.totalPages).toBe(2);
+      expect(upperBoundBody.items).toHaveLength(50);
+      expect(upperBoundBody.items[0].model).toBe("gpt-4o-59");
+      expect(upperBoundBody.items[49].model).toBe("gpt-4o-10");
     });
   });
 });

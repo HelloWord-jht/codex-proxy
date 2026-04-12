@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { existsSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "fs";
+import { existsSync, rmSync, readFileSync } from "fs";
 import { resolve } from "path";
 import { execFileSync } from "child_process";
 
@@ -17,11 +17,12 @@ const SCRIPT = resolve(PKG_DIR, "electron", "prepare-pack.mjs");
 
 // Directories that prepare-pack copies from root into packages/electron/
 const DIRS = ["config", "public", "bin"];
+const COPIED_DIRS = [...DIRS, "native"];
 
 describe("prepare-pack.mjs", () => {
   // Clean up any leftover copies before/after each test
   function cleanCopies(): void {
-    for (const dir of DIRS) {
+    for (const dir of COPIED_DIRS) {
       const dest = resolve(PKG_DIR, dir);
       // Only remove if it's a copy (not the root original)
       if (existsSync(dest) && resolve(dest) !== resolve(ROOT_DIR, dir)) {
@@ -39,7 +40,7 @@ describe("prepare-pack.mjs", () => {
     for (const dir of DIRS) {
       const rootDir = resolve(ROOT_DIR, dir);
       const copyDir = resolve(PKG_DIR, dir);
-      if (existsSync(rootDir)) {
+      if (dir === "bin" || existsSync(rootDir)) {
         expect(existsSync(copyDir)).toBe(true);
       }
     }
@@ -86,6 +87,17 @@ describe("prepare-pack.mjs", () => {
 
     // Should succeed without throwing
     expect(result).toBeDefined();
+  });
+
+  it("copies only runtime files from native/", () => {
+    execFileSync("node", [SCRIPT], { cwd: PKG_DIR });
+
+    const copiedNativeDir = resolve(PKG_DIR, "native");
+    expect(existsSync(resolve(copiedNativeDir, "index.js"))).toBe(true);
+    expect(existsSync(resolve(copiedNativeDir, "package.json"))).toBe(true);
+    expect(existsSync(resolve(copiedNativeDir, "src"))).toBe(false);
+    expect(existsSync(resolve(copiedNativeDir, "Cargo.toml"))).toBe(false);
+    expect(existsSync(resolve(copiedNativeDir, "build.rs"))).toBe(false);
   });
 
   it("--clean is idempotent (no error when dirs already absent)", () => {

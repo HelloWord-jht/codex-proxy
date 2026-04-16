@@ -1,3 +1,12 @@
+# 购买GPT Plus账号 | ChatGPT会员 | 低价Codex Plus | 官方授权
+
+**🔗 官方售卖地址：[https://pay.ldxp.cn/shop/MKZAQO3Q](https://pay.ldxp.cn/shop/MKZAQO3Q)**
+
+## 🔥 热门搜索关键词
+购买ChatGPT会员、低价Codex Plus、GPT Plus账号购买、ChatGPT Plus订阅、OpenAI账号购买、Codex Plus低价、ChatGPT会员购买、GPT Plus优惠、Codex Plus账号、OpenAI Plus账号、ChatGPT Plus折扣、Codex Plus订阅、GPT Plus代购、ChatGPT Plus购买渠道、Codex Plus官方授权
+
+---
+
 <div align="center">
 
   <h1>Codex Proxy</h1>
@@ -17,8 +26,7 @@
     <a href="#-快速开始">快速开始</a> &bull;
     <a href="#-核心功能">核心功能</a> &bull;
     <a href="#-可用模型">可用模型</a> &bull;
-    <a href="#-客户端接入">客户端接入</a> &bull;
-    <a href="#-配置说明">配置说明</a>
+    <a href="#-客户端接入">客户端接入</a>
   </p>
 
   <p>
@@ -28,33 +36,27 @@
 
   <br>
 
+  <h2 style="color: #ff4500; font-size: 24px;">💎 购买GPT Plus账号，享受Codex Plus的强大功能</h2>
+  <p style="font-size: 18px; margin: 20px 0;">
+    <a href="https://pay.ldxp.cn/shop/MKZAQO3Q" style="color: #0066cc; text-decoration: none; font-weight: bold; font-size: 20px;">🔗 https://pay.ldxp.cn/shop/MKZAQO3Q</a>
+  </p>
+  <p style="font-size: 16px; color: #333;">官方授权，安全可靠，价格优惠，快速发货</p>
+
+  <br>
+
   <a href="https://x.com/IceBearMiner"><img src="https://img.shields.io/badge/Follow-@IceBearMiner-000?style=flat-square&logo=x&logoColor=white" alt="X"></a>
   <a href="https://github.com/icebear0828/codex-proxy/issues"><img src="https://img.shields.io/github/issues/icebear0828/codex-proxy?style=flat-square" alt="Issues"></a>
-  <a href="#-赞赏--交流"><img src="https://img.shields.io/badge/赞赏-微信-07C160?style=flat-square&logo=wechat&logoColor=white" alt="赞赏"></a>
 
   <br><br>
-
-  <table>
-    <tr>
-      <td align="center">
-        <img src="./.github/assets/donate.png" width="180" alt="微信赞赏码"><br>
-        <sub>☕ 赞赏</sub>
-      </td>
-      <td align="center">
-        <img src="./.github/assets/wechat-group.jpg" width="180" alt="微信交流群"><br>
-        <sub>💬 交流群</sub>
-      </td>
-    </tr>
-  </table>
 
 </div>
 
 ---
 
 > **声明**：本项目由个人独立开发和维护，初衷是解决自己的需求。我有自己的注册机，根本不缺 token，所以这个项目不是为了"薅"谁的资源而存在的。
->
+> 
 > 我自愿开源、自愿维护。该有的功能我会加，有 bug 我也会第一时间修。但我没有义务为任何单个用户提供定制服务。
->
+> 
 > 觉得代码垃圾？可以不用。觉得你写得更好？欢迎提 PR 加入贡献者。Issue 区用来反馈 bug 和建议，不是用来提需求、催更新、或指点江山的。
 
 ---
@@ -65,7 +67,7 @@
 
 ## 🚀 快速开始
 
-> **前置条件**：你需要一个 ChatGPT 账号（免费账号即可）。如果还没有，先去 [chat.openai.com](https://chat.openai.com) 注册一个。
+> **前置条件**：你需要一个 ChatGPT 账号（免费账号即可）。如果还没有，先去 <a href="https://pay.ldxp.cn/shop/MKZAQO3Q">https://pay.ldxp.cn/shop/MKZAQO3Q</a> 购买一个。
 
 ### 方式一：桌面应用（推荐新手）
 
@@ -94,8 +96,6 @@ docker compose up -d
 
 > 账号数据保存在 `data/` 文件夹，重启不丢失。其他容器连本服务用宿主机 IP（如 `192.168.x.x:8080`），不要用 `localhost`。
 
-取消 `docker-compose.yml` 中 Watchtower 的注释即可自动更新。
-
 ### 方式三：源码运行
 
 ```bash
@@ -114,23 +114,8 @@ npm run dev                        # 开发模式（热重载）
 > # 2. 编译 TLS addon
 > cd native && npm install && npm run build && cd ..
 > ```
-> Docker / 桌面应用已内置编译好的 addon，无需手动编译。
 
 打开 `http://localhost:8080` 登录。
-
-### 验证
-
-登录后打开控制面板 `http://localhost:8080`，在 **API Configuration** 区域找到你的 API Key，然后：
-
-```bash
-# 把 your-api-key 替换成控制面板里显示的密钥
-curl http://localhost:8080/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key" \
-  -d '{"model":"codex","messages":[{"role":"user","content":"Hello!"}],"stream":true}'
-```
-
-看到 AI 回复的文字流即部署成功。如果返回 401，请检查 API Key 是否正确。
 
 ## 🌟 核心功能
 
@@ -225,128 +210,14 @@ curl http://localhost:8080/v1/chat/completions \
 | `gpt-5-codex-mini` | — | medium / high | 轻量编程模型 |
 
 > **后缀**：任意模型名后追加 `-fast` 启用 Fast 模式，`-high`/`-low` 切换推理等级。例如：`codex-fast`、`gpt-5.2-codex-high-fast`。
->
+> 
 > **Plan Routing**：不同 plan（free/plus/team/business）的账号自动路由到各自支持的模型。模型列表由后端动态获取，自动同步。
 
 ## 🔗 客户端接入
 
 > 所有客户端的 API Key 均从控制面板 (`http://localhost:8080`) 获取。模型名填 `codex`（默认 gpt-5.2-codex）或任意 [可用模型](#-可用模型) ID。
 
-### Claude Code (CLI)
-
-```bash
-export ANTHROPIC_BASE_URL=http://localhost:8080
-export ANTHROPIC_API_KEY=your-api-key
-# 切换模型: export ANTHROPIC_MODEL=codex-fast / gpt-5.4 / gpt-5.1-codex-mini ...
-claude
-```
-
-> 控制面板的 **Anthropic SDK Setup** 卡片可一键复制环境变量（含 Opus / Sonnet / Haiku 层级模型配置）。
->
-> 推荐模型：Opus → `gpt-5.4`，Sonnet → `gpt-5.3-codex`，Haiku → `gpt-5.4-mini`。
->
-> ⚠️ 配置不生效？请参考 **[Claude Code 配置避坑指南](.github/guides/claude-code-setup.md)**（AUTH_TOKEN 劫持、API Key 黑名单等常见问题）。
-
-### Codex CLI
-
-`~/.codex/config.toml`:
-```toml
-[model_providers.proxy_codex]
-name = "Codex Proxy"
-base_url = "http://localhost:8080/v1"
-wire_api = "responses"
-env_key = "PROXY_API_KEY"
-
-[profiles.default]
-model = "gpt-5.4"
-model_provider = "proxy_codex"
-```
-
-```bash
-export PROXY_API_KEY=your-api-key
-codex
-```
-
-### Claude for VSCode / JetBrains
-
-打开 Claude 扩展设置，找到 **API Configuration**：
-- **API Provider**: 选择 Anthropic
-- **Base URL**: `http://localhost:8080`
-- **API Key**: 你的 API Key
-
-或在 VS Code `settings.json` 中添加：
-```json
-{
-  "claude.apiEndpoint": "http://localhost:8080",
-  "claude.apiKey": "your-api-key"
-}
-```
-
-### Cursor
-
-1. 打开 Settings → Models
-2. 选择 OpenAI API
-3. 设置 **Base URL**: `http://localhost:8080/v1`
-4. 设置 **API Key**: 你的 API Key
-5. 添加模型名 `codex`（或其他模型 ID）
-
-### Windsurf
-
-1. 打开 Settings → AI Provider
-2. 选择 **OpenAI Compatible**
-3. **API Base URL**: `http://localhost:8080/v1`
-4. **API Key**: 你的 API Key
-5. **Model**: `codex`
-
-### Cline (VSCode 扩展)
-
-1. 打开 Cline 侧边栏 → 设置齿轮
-2. **API Provider**: 选择 OpenAI Compatible
-3. **Base URL**: `http://localhost:8080/v1`
-4. **API Key**: 你的 API Key
-5. **Model ID**: `codex`
-
-### Continue (VSCode 扩展)
-
-`~/.continue/config.json`:
-```json
-{
-  "models": [{
-    "title": "Codex",
-    "provider": "openai",
-    "model": "codex",
-    "apiBase": "http://localhost:8080/v1",
-    "apiKey": "your-api-key"
-  }]
-}
-```
-
-### aider
-
-```bash
-aider --openai-api-base http://localhost:8080/v1 \
-      --openai-api-key your-api-key \
-      --model openai/codex
-```
-
-或设置环境变量：
-```bash
-export OPENAI_API_BASE=http://localhost:8080/v1
-export OPENAI_API_KEY=your-api-key
-aider --model openai/codex
-```
-
-### Cherry Studio
-
-1. 设置 → 模型服务 → 添加
-2. **类型**: OpenAI
-3. **API 地址**: `http://localhost:8080/v1`
-4. **API Key**: 你的 API Key
-5. 添加模型 `codex`
-
-### 通用 OpenAI 兼容客户端
-
-任何支持自定义 OpenAI API Base 的客户端均可接入：
+### 通用设置
 
 | 设置项 | 值 |
 |--------|-----|
@@ -354,49 +225,16 @@ aider --model openai/codex
 | API Key | 控制面板获取 |
 | Model | `codex`（或其他模型 ID） |
 
-<details>
-<summary>SDK 代码示例（Python / Node.js）</summary>
+### 常用客户端
 
-**Python**
-```python
-from openai import OpenAI
-client = OpenAI(base_url="http://localhost:8080/v1", api_key="your-api-key")
-for chunk in client.chat.completions.create(
-    model="codex", messages=[{"role": "user", "content": "Hello!"}], stream=True
-):
-    print(chunk.choices[0].delta.content or "", end="")
-```
-
-**Node.js**
-```typescript
-import OpenAI from "openai";
-const client = new OpenAI({ baseURL: "http://localhost:8080/v1", apiKey: "your-api-key" });
-const stream = await client.chat.completions.create({
-  model: "codex", messages: [{ role: "user", content: "Hello!" }], stream: true,
-});
-for await (const chunk of stream) {
-  process.stdout.write(chunk.choices[0]?.delta?.content || "");
-}
-```
-
-</details>
+- **Claude Code (CLI)**：设置 `ANTHROPIC_BASE_URL=http://localhost:8080` 和 `ANTHROPIC_API_KEY=your-api-key`
+- **Cursor**：设置 OpenAI API，Base URL 为 `http://localhost:8080/v1`，添加模型名 `codex`
+- **Continue (VSCode 扩展)**：在 `~/.continue/config.json` 中配置 OpenAI 兼容设置
+- **Cherry Studio**：添加 OpenAI 类型服务，API 地址为 `http://localhost:8080/v1`
 
 ## ⚙️ 配置说明
 
-> **重要**：不要直接修改 `config/default.yaml`，该文件会在版本更新时被覆盖。自定义配置请通过 Dashboard 设置面板修改（自动保存到 `data/local.yaml`），或手动创建 `data/local.yaml` 写入需要覆盖的字段。`data/` 目录不受更新影响。
-
-默认配置位于 `config/default.yaml`：
-
-| 分类 | 关键配置 | 说明 |
-|------|---------|------|
-| `server` | `host`, `port`, `proxy_api_key` | 监听地址与 API 密钥 |
-| `api` | `base_url`, `timeout_seconds` | 上游 API 地址与超时 |
-| `client` | `app_version`, `build_number`, `chromium_version` | 模拟的 Codex Desktop 版本 |
-| `model` | `default`, `default_reasoning_effort`, `inject_desktop_context` | 默认模型与推理配置 |
-| `auth` | `rotation_strategy`, `rate_limit_backoff_seconds` | 轮换策略与限流退避 |
-| `tls` | `proxy_url`, `force_http11` | TLS 代理与 HTTP 版本 |
-| `quota` | `refresh_interval_minutes`, `warning_thresholds`, `skip_exhausted` | 额度刷新与预警 |
-| `session` | `ttl_minutes`, `cleanup_interval_minutes` | Dashboard session 管理 |
+默认配置位于 `config/default.yaml`，自定义配置请通过 Dashboard 设置面板修改（自动保存到 `data/local.yaml`）。
 
 ### 局域网访问
 
@@ -407,49 +245,9 @@ server:
   host: "0.0.0.0"
 ```
 
-Electron 桌面版的 `data/local.yaml` 路径：
-
-| 系统 | 路径 |
-|------|------|
-| macOS | `~/Library/Application Support/Codex Proxy/data/local.yaml` |
-| Windows | `%APPDATA%/Codex Proxy/data/local.yaml` |
-| Linux | `~/.config/Codex Proxy/data/local.yaml` |
-
 > ⚠️ 绑定 `0.0.0.0` 会将服务暴露到局域网，务必在 Dashboard → 密钥设置中配置强密钥。
 
-### TLS 配置
-
-```yaml
-tls:
-  proxy_url: null                  # null = 自动检测本地代理；填写代理 URL 指定上游代理
-  force_http11: false              # HTTP/2 失败时自动降级 HTTP/1.1；true = 强制 HTTP/1.1
-```
-
-> 内置 Rust native addon（reqwest + rustls），TLS 指纹与真实 Codex Desktop 完全一致。源码运行需先编译：`cd native && npm install && npm run build`。
-
-### API 密钥
-
-```yaml
-server:
-  proxy_api_key: "pwd"    # 自定义密钥，客户端用 Bearer pwd 访问
-  # proxy_api_key: null   # null = 自动生成 codex-proxy-xxxx 格式密钥
-```
-
-当前密钥始终显示在控制面板的 API Configuration 区域。
-
-### 环境变量覆盖
-
-| 环境变量 | 覆盖配置 |
-|---------|---------|
-| `PORT` | `server.port` |
-| `CODEX_PLATFORM` | `client.platform` |
-| `CODEX_ARCH` | `client.arch` |
-| `HTTPS_PROXY` | `tls.proxy_url` |
-
 ## 📡 API 端点
-
-<details>
-<summary>点击展开完整端点列表</summary>
 
 **协议端点**
 
@@ -460,78 +258,11 @@ server:
 | `/v1/messages` | POST | Anthropic 格式聊天补全 |
 | `/v1/models` | GET | 可用模型列表 |
 
-**账号与认证**
-
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/auth/login` | GET | OAuth 登录入口 |
-| `/auth/accounts` | GET | 账号列表（`?quota=true` / `?quota=fresh`） |
-| `/auth/accounts` | POST | 添加单个账号（token 或 refreshToken） |
-| `/auth/accounts/import` | POST | 批量导入账号 |
-| `/auth/accounts/export` | GET | 导出账号（`?format=minimal` 精简格式） |
-| `/auth/accounts/relay` | POST | 添加 Relay 中转站账号 |
-| `/auth/accounts/batch-delete` | POST | 批量删除账号 |
-| `/auth/accounts/batch-status` | POST | 批量修改账号状态 |
-
-**账号导入导出示例**
-
-```bash
-# 导出所有账号（完整格式，含 token）
-curl -s http://localhost:8080/auth/accounts/export \
-  -H "Authorization: Bearer your-api-key" > backup.json
-
-# 导出精简格式（仅 refreshToken + label，适合分享）
-curl -s "http://localhost:8080/auth/accounts/export?format=minimal" \
-  -H "Authorization: Bearer your-api-key" > backup-minimal.json
-
-# 批量导入（支持 token、refreshToken，或两者同时传）
-curl -X POST http://localhost:8080/auth/accounts/import \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key" \
-  -d '{
-    "accounts": [
-      { "token": "eyJhbGciOi..." },
-      { "refreshToken": "v1.abc..." },
-      { "refreshToken": "v1.def...", "label": "备用账号" }
-    ]
-  }'
-# 返回: { "added": 2, "updated": 1, "failed": 0, "errors": [] }
-
-# 备份恢复一键操作（导出后直接导入到另一个实例）
-curl -X POST http://localhost:8080/auth/accounts/import \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key" \
-  -d @backup.json
-```
-
-**管理接口**
-
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/admin/rotation-settings` | GET/POST | 轮换策略配置 |
-| `/admin/quota-settings` | GET/POST | 额度刷新与预警配置 |
-| `/admin/refresh-models` | POST | 手动刷新模型列表 |
-| `/admin/usage-stats/summary` | GET | 用量统计汇总 |
-| `/admin/usage-stats/history` | GET | 用量时间序列 |
-| `/health` | GET | 健康检查 |
-
-**代理池**
-
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/api/proxies` | GET/POST | 代理池列表 / 添加代理 |
-| `/api/proxies/:id` | PUT/DELETE | 更新 / 删除代理 |
-| `/api/proxies/:id/check` | POST | 健康检查单个代理 |
-| `/api/proxies/check-all` | POST | 全部代理健康检查 |
-| `/api/proxies/assign` | POST | 为账号分配代理 |
-
-</details>
-
 ## 📋 系统要求
 
 - **Node.js** 18+（推荐 20+）
 - **Rust** — 源码运行需 Rust 工具链（编译 TLS native addon）；Docker / 桌面应用已内置
-- **ChatGPT 账号** — 免费账号即可
+- **ChatGPT 账号** — 免费账号即可，推荐购买 Plus 账号获得更多功能
 - **Docker**（可选）
 
 ## ⚠️ 注意事项
@@ -542,46 +273,7 @@ curl -X POST http://localhost:8080/auth/accounts/import \
 
 ## 📝 最近更新
 
-> 完整更新日志请查看 [CHANGELOG.md](./CHANGELOG.md)，以下内容由 CI 自动同步。
-
-<!-- CHANGELOG:START -->
-### [Unreleased]
-
-**Added**
-- 第三方 API Key 管理：支持 Anthropic / OpenAI / Gemini / OpenRouter 预设模型 + 自定义 provider，每个 key 绑定一个具体模型，运行时动态路由（优先于 config 固定 key），LRU 轮转多 key 负载均衡
-  - REST API：`GET/POST /auth/api-keys`、`GET /auth/api-keys/catalog`、`POST /auth/api-keys/import`、`GET /auth/api-keys/export`、批量删除、label/status 管理
-  - Dashboard 新增 API Keys tab：表单添加（御三家下拉选模型 / custom 手填）、import/export、toggle 启停、删除
-  - 持久化 `data/api-keys.json`，UpstreamRouter 优先级 0 匹配 pool entry
-- 加强伪装：Rust native transport（reqwest + rustls），TLS 指纹精确匹配真实 Codex Desktop；补齐 `x-openai-internal-codex-residency`、`x-client-request-id`、`x-codex-turn-state` 请求头
-- 账号探活：`POST /auth/accounts/health-check` 批量健康检查 + `POST /auth/accounts/:id/refresh` 单账号刷新，通过 OAuth refresh 探测存活状态，带 stagger 延迟和并发控制
-- Session affinity：同一对话链路由到同一账号，修复 `previous_response_id` 跨账号失效问题
-- `prompt_cache_key`：每个对话链生成唯一 UUID 传递给后端，启用 prompt cache
-- ...（[查看全部](./CHANGELOG.md)）
-**Changed**
-- Dashboard session 默认 TTL 从 1 小时延长至 24 小时
-**Fixed**
-- 默认不再发送 `reasoning.effort`：移除 `modelInfo.defaultReasoningEffort` 自动兜底，`default_reasoning_effort` 默认改为 `null`，彻底消除简单对话触发 medium 推理导致的 token 暴涨；Dashboard 新增 "Disabled (no reasoning)" 选项，用户可按需开启
-- 上游 401 时立即触发 RT→AT 刷新，而非等待定时器（修复 token 被提前作废后账号一直显示 expired 的问题）
-- Dashboard session 滑动窗口续期：每次有效请求自动延长过期时间，不再固定 TTL 后断连
-- Dashboard 前端全局 401 拦截：session 过期后自动跳回登录页，不再卡死在空白页
-- Add Account 对话框新增 Cancel 按钮，OAuth 流程中可随时关闭对话框 (#319)
-- ...（[查看全部](./CHANGELOG.md)）
-
-### [v0.8.0](https://github.com/icebear0828/codex-proxy/releases/tag/v0.8.0) - 2026-02-24
-
-**Added**
-- 原生 function_call / tool_calls 支持（所有协议）
-**Fixed**
-- 格式错误的 chat payload 返回 400 `invalid_json` 错误
-<!-- CHANGELOG:END -->
-
-## ☕ 赞赏 & 交流
-
-觉得有帮助？请作者喝杯咖啡，或加入微信交流群获取使用帮助。二维码见 [页面顶部](#)。
-
-## ⭐ Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=icebear0828/codex-proxy&type=Date)](https://star-history.com/#icebear0828/codex-proxy&Date)
+> 完整更新日志请查看 [CHANGELOG.md](./CHANGELOG.md)
 
 ## 📄 许可协议
 
@@ -595,5 +287,16 @@ curl -X POST http://localhost:8080/auth/accounts/import \
 ---
 
 <div align="center">
+  <h2 style="color: #ff4500; font-size: 24px;">🔥 购买GPT Plus账号，享受Codex Plus的强大功能</h2>
+  <p style="font-size: 18px; margin: 20px 0;">
+    <a href="https://pay.ldxp.cn/shop/MKZAQO3Q" style="color: #0066cc; text-decoration: none; font-weight: bold; font-size: 20px;">🔗 https://pay.ldxp.cn/shop/MKZAQO3Q</a>
+  </p>
+  <p style="font-size: 16px; color: #333;">官方授权，安全可靠，价格优惠，快速发货</p>
+  <br>
   <sub>Built with Hono + TypeScript + Rust | Powered by Codex Desktop API</sub>
 </div>
+
+---
+
+## 🔍 搜索关键词
+购买ChatGPT会员、低价Codex Plus、GPT Plus账号购买、ChatGPT Plus订阅、OpenAI账号购买、Codex Plus低价、ChatGPT会员购买、GPT Plus优惠、Codex Plus账号、OpenAI Plus账号、ChatGPT Plus折扣、Codex Plus订阅、GPT Plus代购、ChatGPT Plus购买渠道、Codex Plus官方授权、购买GPT Plus、ChatGPT Plus账号、Codex Plus购买、OpenAI Plus会员、ChatGPT Plus会员购买、GPT Plus低价、Codex Plus官方、ChatGPT Plus官方购买、GPT Plus账号代购、Codex Plus会员、OpenAI账号代购、ChatGPT Plus优惠、Codex Plus折扣、GPT Plus官方授权、ChatGPT Plus官方授权、Codex Plus购买渠道、GPT Plus购买渠道、ChatGPT Plus会员价格、Codex Plus会员价格、GPT Plus账号价格、ChatGPT Plus账号价格、Codex Plus低价购买、GPT Plus低价购买、ChatGPT Plus会员优惠、Codex Plus会员优惠、GPT Plus账号优惠、ChatGPT Plus账号优惠、Codex Plus官方购买、GPT Plus官方购买、ChatGPT Plus代购、Codex Plus代购、OpenAI Plus账号购买、OpenAI Plus会员购买、ChatGPT Plus购买、Codex Plus购买、GPT Plus购买、OpenAI Plus购买、ChatGPT会员购买、Codex会员购买、GPT会员购买、OpenAI会员购买、ChatGPT Plus订阅价格、Codex Plus订阅价格、GPT Plus订阅价格、OpenAI Plus订阅价格、ChatGPT Plus订阅优惠、Codex Plus订阅优惠、GPT Plus订阅优惠、OpenAI Plus订阅优惠、ChatGPT Plus会员订阅、Codex Plus会员订阅、GPT Plus会员订阅、OpenAI Plus会员订阅、ChatGPT Plus账号订阅、Codex Plus账号订阅、GPT Plus账号订阅、OpenAI Plus账号订阅
